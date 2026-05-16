@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>No Homers Buli Tippspiel</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;background:#f4f4f4;color:#111;min-height:100vh}
+#app{max-width:680px;margin:0 auto;padding:12px 12px 60px}
+select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:26px!important}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{opacity:1}
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;padding:14px 0 14px;border-bottom:1px solid #e0e0e0;margin-bottom:16px;background:#f4f4f4;position:sticky;top:0;z-index:10}
+.buli-badge{background:#D30000;color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;letter-spacing:.03em}
+.header-right{text-align:right}
+.header-date{font-size:12px;color:#666}
+.header-user{font-size:11px;color:#aaa;margin-top:2px}
+/* TABS */
+.tab-bar{display:flex;gap:2px;border-bottom:1px solid #e0e0e0;margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab{padding:9px 14px;font-size:13px;font-weight:500;background:none;border:none;border-bottom:2px solid transparent;color:#666;cursor:pointer;margin-bottom:-1px;white-space:nowrap;transition:all .15s}
+.tab.active{color:#D30000;border-bottom-color:#D30000}
+.tab.invite{color:#D4A017;margin-left:auto}
+.tab.invite.active{border-bottom-color:#D4A017}
+/* UTILITIES */
+.notice{font-size:12px;color:#555;background:#fff;border-radius:8px;padding:9px 12px;margin-bottom:12px;line-height:1.5;border:1px solid #e8e8e8}
+.notice.gold{background:#fffbeb;border-color:#f0d070;color:#7a5c00}
+.section-title{font-size:10px;font-weight:600;color:#aaa;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+/* CARDS */
+.card{background:#fff;border-radius:12px;border:1px solid #e8e8e8;margin-bottom:10px;overflow:hidden}
+/* GAME */
+.game-wrap{margin-bottom:12px}
+.game-top{background:#fff;border:1px solid #e8e8e8;border-radius:12px 12px 0 0;border-bottom:none;padding:12px 14px;display:flex;align-items:center;gap:8px}
+.game-top.standalone{border-radius:12px;border-bottom:1px solid #e8e8e8}
+.team-side{flex:1}.team-side.r{text-align:right}
+.tname{font-size:12px;font-weight:600;color:#111}
+.tabbr{font-size:10px;color:#888}
+.score-center{min-width:90px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.score-num{font-size:22px;font-weight:600;letter-spacing:3px;color:#111}
+.pill{font-size:10px;padding:2px 9px;border-radius:20px;font-weight:500}
+.pill-scheduled{background:#e8f4fd;color:#1a6fad}
+.pill-live{background:#D30000;color:#fff;animation:blink 1.4s infinite}
+.pill-final{background:#f0f0f0;color:#777}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.6}}
+.admin-inputs{display:flex;align-items:center;gap:4px;margin-top:5px}
+.sinput{width:28px;height:26px;text-align:center;font-size:12px;border:1px solid #ccc;border-radius:5px;background:#fff}
+.set-btn{font-size:10px;padding:3px 8px;border:1px solid #ccc;border-radius:5px;cursor:pointer;background:#f5f5f5;font-weight:500}
+.set-btn.red{background:#D30000;color:#fff;border-color:#D30000}
+/* ADMIN BONUS BAR */
+.admin-bar{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;background:#f9f9f9;border:1px solid #e8e8e8;border-top:none;border-radius:0 0 12px 12px}
+.mini-label{font-size:10px;font-weight:600;margin-bottom:5px}
+.sel-sm{width:100%;padding:5px 26px 5px 8px;font-size:11px;border:1px solid #ddd;border-radius:7px;background:#fff;cursor:pointer}
+.sel-sm:disabled{opacity:.5;cursor:not-allowed}
+.event-tag{font-size:10px;margin-top:4px;display:inline-block;padding:2px 8px;border-radius:20px}
+/* TIP BLOCK */
+.tip-block{background:#fff;border:1px solid #e8e8e8;border-radius:12px;margin-bottom:10px;overflow:hidden}
+.tip-head{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;padding:10px 12px}
+.tip-abbr{font-size:12px;font-weight:600}
+.tip-full{font-size:9px;color:#aaa;margin-top:1px}
+.tip-center{display:flex;flex-direction:column;align-items:center;gap:5px}
+.tip-inputs-row{display:flex;align-items:center;gap:4px}
+.ti{width:32px;height:30px;text-align:center;font-size:14px;font-weight:500;border:1px solid #ccc;border-radius:6px;background:#fff}
+.ti:focus{outline:none;border-color:#D30000}
+.ti.locked{background:#f0f0f0;color:#aaa;cursor:not-allowed}
+.badge{font-size:9px;padding:2px 7px;border-radius:20px;font-weight:500;white-space:nowrap}
+.b-info{background:#e8f4fd;color:#1a6fad}
+.b-ok{background:#d1fae5;color:#065f46}
+.b-err{background:#fee2e2;color:#991b1b}
+.b-muted{background:#f0f0f0;color:#777}
+/* BONUS */
+.bonus-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;border-top:1px solid #f0f0f0}
+.bonus-cell{border-radius:8px;padding:9px 10px}
+.bonus-cell.goal{background:#f0fdf4;border:1px solid #bbf7d0}
+.bonus-cell.card{background:#fff5f5;border:1px solid #fecaca}
+.bml{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.bml-title{font-size:10px;font-weight:600}
+.bstatus{font-size:9px;padding:2px 6px;border-radius:20px;font-weight:500}
+.bs-p{background:#fef3c7;color:#92400e}
+.bs-ok{background:#d1fae5;color:#065f46}
+.bs-err{background:#fee2e2;color:#991b1b}
+.sel-tip{width:100%;padding:5px 26px 5px 8px;font-size:11px;border:1px solid #ddd;border-radius:7px;background:#fff;cursor:pointer}
+.sel-tip:disabled{opacity:.55;cursor:not-allowed;background-image:none}
+/* SAVE BTN */
+.save-btn{width:100%;margin-top:6px;padding:12px;font-size:14px;font-weight:600;border-radius:10px;cursor:pointer;border:none;background:#D4A017;color:#fff;transition:all .2s;letter-spacing:.01em}
+.save-btn:disabled{background:#ccc;cursor:not-allowed}
+.save-btn.saving{background:#888}
+.save-btn.saved{background:#1D9E75}
+.hint{font-size:11px;color:#D4A017;text-align:center;margin-top:6px;min-height:16px}
+/* RANK */
+.rank-table{width:100%;border-collapse:collapse}
+.rank-table th{font-size:10px;font-weight:600;color:#aaa;text-align:left;padding:6px 8px;border-bottom:1px solid #e8e8e8;letter-spacing:.04em}
+.rank-table td{padding:10px 8px;border-bottom:1px solid #f0f0f0;font-size:13px}
+.rank-table tr:last-child td{border-bottom:none}
+.rank-table tr.me-row td{background:#fffbeb}
+.pts{font-size:15px;font-weight:700;color:#D30000}
+.pts.prev{color:#1D9E75}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.mode-btns{display:flex;gap:8px;margin-bottom:14px}
+.mode-btn{padding:7px 14px;font-size:12px;font-weight:500;border-radius:20px;border:1px solid #ddd;cursor:pointer;background:#f5f5f5;color:#666;transition:all .15s}
+.mode-btn.mfinal{background:#D30000;color:#fff;border-color:#D30000}
+.mode-btn.mpreview{background:#1D9E75;color:#fff;border-color:#1D9E75}
+.preview-banner{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#065f46}
+/* INVITE */
+.invite-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.inv-card{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:14px}
+.inv-card.me{border-color:#D4A017}
+.link-box{display:flex;align-items:center;gap:6px;background:#f5f5f5;border-radius:8px;padding:7px 10px;margin-top:10px}
+.link-text{flex:1;font-size:10px;color:#555;word-break:break-all;line-height:1.4}
+.copy-btn{flex-shrink:0;padding:5px 11px;font-size:11px;border:1px solid #ddd;border-radius:6px;cursor:pointer;background:#fff;font-weight:500;transition:all .15s}
+.copy-btn.done{background:#1D9E75;color:#fff;border-color:#1D9E75}
+/* AVATAR */
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0}
+.gold-badge{font-size:9px;background:#D4A017;color:#fff;padding:2px 7px;border-radius:20px;margin-left:6px;vertical-align:1px;font-weight:500}
+/* LOADING */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:14px}
+.spinner{width:38px;height:38px;border:3px solid #D30000;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* SYNC indicator */
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#1D9E75;display:inline-block;margin-right:5px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+/* RESPONSIVE */
+@media(max-width:480px){
+  .bonus-grid{grid-template-columns:1fr}
+  .admin-bar{grid-template-columns:1fr}
+  .invite-grid{grid-template-columns:1fr}
+  .hide-mobile{display:none}
+  #app{padding:8px 8px 60px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p style="font-size:13px;color:#666">Verbinde mit Firebase…</p>
+  </div>
+  <div id="main" style="display:none"></div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB1cJY_5gsf8St6X9yHmnHc59D5_SG63PI",
+  authDomain: "no-homers-buli-tippspiel.firebaseapp.com",
+  databaseURL: "https://no-homers-buli-tippspiel-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "no-homers-buli-tippspiel",
+  storageBucket: "no-homers-buli-tippspiel.firebasestorage.app",
+  messagingSenderId: "1029615433030",
+  appId: "1:1029615433030:web:b5f11fab42e4a7bdd32147",
+  measurementId: "G-RQE61RKXY0"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getDatabase(fbApp);
+
+// ── DATA ──────────────────────────────────────────────────────────────────
+const GAMES = [
+  {home:"Bayern München",ha:"FCB",away:"1. FC Köln",aa:"KOE"},
+  {home:"Bayer Leverkusen",ha:"LEV",away:"Hamburger SV",aa:"HSV"},
+  {home:"Eintracht Frankfurt",ha:"SGE",away:"VfB Stuttgart",aa:"VFB"},
+  {home:"SC Freiburg",ha:"SCF",away:"RB Leipzig",aa:"RBL"},
+  {home:"Werder Bremen",ha:"SVW",away:"Borussia Dortmund",aa:"BVB"},
+  {home:"Borussia M'gladbach",ha:"BMG",away:"TSG Hoffenheim",aa:"TSG"},
+  {home:"Union Berlin",ha:"UNI",away:"FC Augsburg",aa:"FCA"},
+  {home:"FC St. Pauli",ha:"STP",away:"VfL Wolfsburg",aa:"WOB"},
+  {home:"1. FC Heidenheim",ha:"FCH",away:"FSV Mainz 05",aa:"M05"},
+];
+
+const SQUADS = {
+  FCB:["Manuel Neuer","Sven Ulreich","Josip Stanisic","Dayot Upamecano","Min-jae Kim","Alphonso Davies","Raphaël Guerreiro","Joshua Kimmich","Leon Goretzka","Konrad Laimer","Jamal Musiala","Serge Gnabry","Thomas Müller","Leroy Sané","Harry Kane","Luis Díaz"],
+  KOE:["Marvin Schwäbe","Jonas Urbig","Timo Hübers","Jeff Chabot","Luca Kilian","Florian Kainz","Dejan Ljubicic","Eric Martel","Linton Maina","Davie Selke","Tim Lemperle","Faride Alidou","Steffen Tigges"],
+  LEV:["Lukáš Hrádecký","Jonathan Tah","Piero Hincapié","Granit Xhaka","Robert Andrich","Exequiel Palacios","Jeremie Frimpong","Alejandro Grimaldo","Florian Wirtz","Jonas Hofmann","Victor Boniface","Patrik Schick","Martin Terrier","Nathan Tella","Amine Adli","Ernest Poku"],
+  HSV:["Daniel Heuer Fernandes","Jonas David","Guilherme Ramos","Miro Muheim","Silvan Hefti","Ludovit Reis","Ansgar Knauff","Bakery Jatta","William Mikelbrencis","Jean-Luc Dompé","Robert Glatzel","Ransford Königsdörffer","Adam Karabec","Fiete Arp"],
+  SGE:["Kevin Trapp","Diant Ramaj","Aurèle Amenda","Robin Koch","Arthur Theate","Nathaniel Brown","Hugo Larsson","Mahmoud Dahoud","Ryo Dōan","Junior Dina Ebimbe","Fares Chaibi","Can Uzun","Rasmus Højlund","Elye Wahi","Omar Marmoush"],
+  VFB:["Alexander Nübel","Josha Vagnoman","Ameen Al-Dakhil","Pascal Stenzel","Chris Führich","Angelo Stiller","Enzo Millot","Fabian Rieder","Silas","Jamie Leweling","Deniz Undav","El Bilal Touré","Ermedin Demirović"],
+  SCF:["Noah Atubolu","Kiliann Sildillia","Philipp Lienhart","Patrick Osterhage","Christian Günter","Lukas Kübler","Nicolas Höfler","Merlin Röhl","Ritsu Doan","Vincenzo Grifo","Michael Gregoritsch","Lucas Höler","Junior Adamu","Maximilian Philipp"],
+  RBL:["Peter Gulacsi","Mohamed Simakan","Willi Orban","Castello Lukeba","Benjamin Henrichs","Nicolas Seiwald","Kevin Kampl","Xavi Simons","Dani Olmo","Christoph Baumgartner","Lois Openda","André Silva","Yussuf Poulsen","Sávio"],
+  SVW:["Michael Zetterer","Amos Pieper","Marco Friedl","Milos Veljkovic","Olivier Deman","Felix Agu","Jens Stage","Christian Groß","Senne Lynen","Romano Schmid","Naby Keita","Justin Njinmah","Marvin Ducksch","Dawid Kownacki"],
+  BVB:["Gregor Kobel","Julian Ryerson","Mats Hummels","Nico Schlotterbeck","Tom Rothe","Marcel Sabitzer","Emre Can","Jude Bellingham","Julien Duranville","Karim Adeyemi","Sebastien Haller","Niclas Füllkrug","Marco Reus","Felix Nmecha"],
+  BMG:["Jonas Omlin","Joe Scally","Ko Itakura","Nico Elvedi","Oscar Wendt","Christoph Kramer","Manu Koné","Franck Honorat","Alassane Pléa","Tomas Cvancara","Lars Stindl","Marcus Thuram","Marvin Friedrich"],
+  TSG:["Oliver Baumann","Pavel Kaderabek","Ozan Kabak","Grischa Prömel","David Raum","Dennis Geiger","Florian Grillitsch","Tom Bischof","Fisnik Asllani","Andrej Kramaric","Maximilian Beier","Adam Hlozek","Ihlas Bebou"],
+  UNI:["Frederik Rönnow","Josip Juranovic","Diogo Leite","Robin Knoche","Jerome Roussillon","Christopher Trimmel","Rani Khedira","Andras Schäfer","Miloš Pantović","Kevin Volland","Sheraldo Becker","Benedict Hollerbach","Tim Skarke"],
+  FCA:["Finn Dahmen","Mads Pedersen","Jeffrey Gouweleeuw","Maximilian Bauer","Iago","Raphael Framberger","Elvis Rexhbecaj","Niklas Dorsch","Arne Maier","Daniel Caligiuri","Florian Niederlechner","Mergim Berisha"],
+  STP:["Nikola Vasilj","Hauke Wahl","Eric Smith","Karol Mets","Connor Metcalfe","Jackson Irvine","Marcel Hartel","Oladapo Afolabi","Johannes Eggestein","Elias Saad","Etienne Amenyido","Morgan Guilavogui"],
+  WOB:["Koen Casteels","Ridle Baku","Maxence Lacroix","Sebastian Bornauw","Paulo Otavio","Patrick Wimmer","Maximilian Arnold","Josuha Guilavogui","Yannick Gerhardt","Mattias Svanberg","Lukas Nmecha","Jonas Wind","Luca Waldschmidt","Kevin Paredes"],
+  FCH:["Kevin Müller","Lennart Grill","Patrick Mainka","Tim Siersleben","Jonas Föhrenbach","Jan Schöppner","Niklas Dorsch","Lennard Maloney","Marvin Pieringer","Denis Thomalla","Tim Kleindienst","Robert Leipertz","Florian Pick"],
+  M05:["Robin Zentner","Aaron Martin","Stefan Bell","Moussa Niakhaté","Silvan Widmer","Danny da Costa","Anton Stach","Dominik Kohr","Lee Jae-sung","Leandro Barreiro","Jonathan Burkardt","Karim Onisiwo","Ludovic Ajorque"],
+};
+
+const PLAYERS = [
+  {name:"Hoirkman",pos:1},{name:"Kroesinho",pos:2},{name:"Sigmeister",pos:3},
+  {name:"Daniel",pos:4},{name:"Christian",pos:5},{name:"Huendin",pos:6},
+  {name:"Helgster",pos:7},{name:"DaLucio",pos:8},{name:"Tipphipster",pos:9},
+  {name:"MaverickTH",pos:10},{name:"Horstwith",pos:11},{name:"Gunaldinho",pos:12},
+];
+
+const ACOLORS = [
+  ["#dbeafe","#1e40af"],["#dcfce7","#166534"],["#fef9c3","#854d0e"],
+  ["#fee2e2","#991b1b"],["#ede9fe","#5b21b6"],["#fef3c7","#92400e"],
+  ["#fce7f3","#9d174d"],["#f1f5f9","#334155"],["#e0f2fe","#0c4a6e"],
+  ["#fef2f2","#7f1d1d"],["#f0fdf4","#14532d"],["#fff7ed","#7c2d12"],
+];
+
+const ADMIN = "Huendin";
+
+function playerToken(n) {
+  let h = 0;
+  for (let i = 0; i < n.length; i++) h = (Math.imul(31,h) + n.charCodeAt(i)) | 0;
+  return Math.abs(h).toString(36).padStart(6,'0');
+}
+
+// ── URL PARAMS ──────────────────────────────────────────────────────────────
+const params = new URLSearchParams(window.location.search);
+const urlSpieler = params.get('spieler');
+const urlToken   = params.get('token');
+let ME = null;
+if (urlSpieler && urlToken) {
+  const found = PLAYERS.find(p => p.name === urlSpieler);
+  if (found && playerToken(found.name) === urlToken) ME = found;
+}
+if (!ME) ME = PLAYERS.find(p => p.name === ADMIN);
+const IS_ADMIN = ME.name === ADMIN;
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let results     = GAMES.map(() => ({h:null, a:null, status:'scheduled'}));
+let tips        = Object.fromEntries(PLAYERS.map(p => [p.name, GAMES.map(() => null)]));
+let bonusTips   = Object.fromEntries(PLAYERS.map(p => [p.name, GAMES.map(() => ({goalScorer:null, cardPlayer:null}))]));
+let bonusEvents = GAMES.map(() => ({firstGoal:null, firstCard:null}));
+let currentTab  = 'live';
+let rankMode    = 'final';
+
+// ── FIREBASE READ/WRITE ──────────────────────────────────────────────────────
+async function fbSet(path, value) {
+  await set(ref(db, path), value);
+}
+async function fbGet(path, fallback) {
+  try {
+    const snap = await get(ref(db, path));
+    return snap.exists() ? snap.val() : fallback;
+  } catch { return fallback; }
+}
+
+function mergeTips(fromDb) {
+  const base = Object.fromEntries(PLAYERS.map(p => [p.name, GAMES.map(() => null)]));
+  if (!fromDb) return base;
+  PLAYERS.forEach(p => { if (fromDb[p.name]) base[p.name] = fromDb[p.name]; });
+  return base;
+}
+function mergeBonusTips(fromDb) {
+  const base = Object.fromEntries(PLAYERS.map(p => [p.name, GAMES.map(() => ({goalScorer:null,cardPlayer:null}))]));
+  if (!fromDb) return base;
+  PLAYERS.forEach(p => { if (fromDb[p.name]) base[p.name] = fromDb[p.name]; });
+  return base;
+}
+
+async function loadAll() {
+  const [r, t, bt, be] = await Promise.all([
+    fbGet('results',     GAMES.map(() => ({h:null,a:null,status:'scheduled'}))),
+    fbGet('tips',        null),
+    fbGet('bonusTips',   null),
+    fbGet('bonusEvents', GAMES.map(() => ({firstGoal:null,firstCard:null}))),
+  ]);
+  results     = Array.isArray(r) ? r : GAMES.map(() => ({h:null,a:null,status:'scheduled'}));
+  tips        = mergeTips(t);
+  bonusTips   = mergeBonusTips(bt);
+  bonusEvents = Array.isArray(be) ? be : GAMES.map(() => ({firstGoal:null,firstCard:null}));
+}
+
+// Live listener — re-render whenever DB changes
+function startListener() {
+  onValue(ref(db, '/'), snap => {
+    if (!snap.exists()) return;
+    const data = snap.val();
+    if (data.results)     results     = Array.isArray(data.results) ? data.results : results;
+    if (data.tips)        tips        = mergeTips(data.tips);
+    if (data.bonusTips)   bonusTips   = mergeBonusTips(data.bonusTips);
+    if (data.bonusEvents) bonusEvents = Array.isArray(data.bonusEvents) ? data.bonusEvents : bonusEvents;
+    render();
+  });
+}
+
+// ── POINTS ───────────────────────────────────────────────────────────────────
+function calcPts(mode) {
+  const pts = Object.fromEntries(PLAYERS.map(p => [p.name, 0]));
+  const now = Date.now();
+  GAMES.forEach((_, gi) => {
+    const r = results[gi];
+    const ok = mode === 'preview' ? (r.h !== null && r.a !== null) : r.status === 'final';
+    if (!ok) return;
+    const winners = PLAYERS.filter(p => { const t = (tips[p.name]||[])[gi]; return t && t.h === r.h && t.a === r.a; });
+    if (winners.length) {
+      const byS = {};
+      winners.forEach(p => {
+        const ts = mode === 'preview' ? now : ((tips[p.name][gi]||{}).ts || now);
+        const s = Math.floor(ts / 1000);
+        (byS[s] = byS[s] || []).push(p.name);
+      });
+      const ms = Math.min(...Object.keys(byS).map(Number));
+      byS[ms].forEach(n => pts[n] += 1 / byS[ms].length);
+    }
+    const ev = bonusEvents[gi];
+    PLAYERS.forEach(p => {
+      const bt = (bonusTips[p.name]||[])[gi] || {};
+      if (ev && ev.firstGoal && bt.goalScorer === ev.firstGoal) pts[p.name] += 1;
+      if (ev && ev.firstCard  && bt.cardPlayer === ev.firstCard)  pts[p.name] += 1;
+    });
+  });
+  return pts;
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render() {
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+  main.appendChild(mkHeader());
+  main.appendChild(mkTabs());
+  const view = document.createElement('div');
+  if (currentTab === 'live')   view.appendChild(mkLive());
+  if (currentTab === 'tips')   view.appendChild(mkTips());
+  if (currentTab === 'rank')   view.appendChild(mkRank());
+  if (currentTab === 'invite' && IS_ADMIN) view.appendChild(mkInvite());
+  main.appendChild(view);
+}
+
+// ── HEADER ───────────────────────────────────────────────────────────────────
+function mkHeader() {
+  const d = document.createElement('div');
+  d.className = 'header';
+  d.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="buli-badge">Bundesliga</span>
+      <span style="font-size:13px;color:#555;font-weight:500">34. Spieltag</span>
+    </div>
+    <div class="header-right">
+      <div class="header-date"><span class="sync-dot"></span>Live</div>
+      <div class="header-user">${ME.name}${IS_ADMIN ? ' · Admin' : ''}</div>
+    </div>`;
+  return d;
+}
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+function mkTabs() {
+  const tabs = IS_ADMIN ? ['live','tips','rank','invite'] : ['live','tips','rank'];
+  const labels = {live:'⚽ Ergebnisse', tips:'✏️ Meine Tipps', rank:'🏆 Rangliste', invite:'🔗 Einladungen'};
+  const bar = document.createElement('div');
+  bar.className = 'tab-bar';
+  tabs.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (t === currentTab ? ' active' : '') + (t === 'invite' ? ' invite' : '');
+    btn.textContent = labels[t];
+    btn.onclick = () => { currentTab = t; render(); };
+    bar.appendChild(btn);
+  });
+  return bar;
+}
+
+// ── LIVE ─────────────────────────────────────────────────────────────────────
+function mkLive() {
+  const wrap = document.createElement('div');
+  notice(wrap, IS_ADMIN
+    ? 'Ergebnisse eintragen: ▶ = Live · ✓ = Abpfiff (sperrt Tipps für dieses Spiel).'
+    : 'Live-Ergebnisse aller 9 Partien. Daten werden automatisch synchronisiert.');
+
+  sectionTitle(wrap, 'Spielergebnisse — 15:30 Uhr');
+
+  GAMES.forEach((g, gi) => {
+    const r = results[gi];
+    const ev = bonusEvents[gi] || {firstGoal:null, firstCard:null};
+    const isFinal = r.status === 'final';
+    const scoreStr = r.status === 'scheduled' ? '– : –' : `${r.h} : ${r.a}`;
+    const gw = document.createElement('div');
+    gw.className = 'game-wrap';
+
+    const gt = document.createElement('div');
+    gt.className = IS_ADMIN ? 'game-top' : 'game-top standalone';
+    gt.innerHTML = `
+      <div class="team-side r"><div class="tname">${g.home}</div><div class="tabbr">${g.ha}</div></div>
+      <div class="score-center">
+        <div class="score-num">${scoreStr}</div>
+        <span class="pill pill-${r.status}">${r.status==='scheduled'?'15:30':r.status==='live'?'Live':'Abpfiff'}</span>
+        ${IS_ADMIN ? `<div class="admin-inputs">
+          <input class="sinput" type="number" min="0" max="20" placeholder="H" id="rh-${gi}" value="${r.h!==null?r.h:''}">
+          <span style="font-size:11px;color:#bbb">:</span>
+          <input class="sinput" type="number" min="0" max="20" placeholder="A" id="ra-${gi}" value="${r.a!==null?r.a:''}">
+          <button class="set-btn" onclick="doSetResult(${gi},'live')">▶</button>
+          <button class="set-btn red" onclick="doSetResult(${gi},'final')">✓</button>
+        </div>` : ''}
+      </div>
+      <div class="team-side"><div class="tname">${g.away}</div><div class="tabbr">${g.aa}</div></div>`;
+    gw.appendChild(gt);
+
+    if (IS_ADMIN) {
+      const ab = document.createElement('div');
+      ab.className = 'admin-bar';
+      ab.appendChild(mkAdminBonusCell(gi, 'goal', ev, isFinal));
+      ab.appendChild(mkAdminBonusCell(gi, 'card', ev, isFinal));
+      gw.appendChild(ab);
+    }
+    wrap.appendChild(gw);
+  });
+  return wrap;
+}
+
+function mkAdminBonusCell(gi, type, ev, isFinal) {
+  const isGoal = type === 'goal';
+  const color   = isGoal ? '#1D9E75' : '#E24B4A';
+  const set     = isGoal ? ev.firstGoal : ev.firstCard;
+  const id      = `ad${isGoal?'g':'c'}-${gi}`;
+  const g = GAMES[gi];
+  let opts = `<option value="">— wählen —</option>`;
+  opts += `<optgroup label="${g.home}">${(SQUADS[g.ha]||[]).map(n=>`<option value="${n}|${g.ha}">${n}</option>`).join('')}</optgroup>`;
+  opts += `<optgroup label="${g.away}">${(SQUADS[g.aa]||[]).map(n=>`<option value="${n}|${g.aa}">${n}</option>`).join('')}</optgroup>`;
+  const d = document.createElement('div');
+  d.innerHTML = `
+    <div class="mini-label" style="color:${color}">${isGoal ? '⚽ Nächstes Tor' : '🟨 Nächste Karte'}</div>
+    <select class="sel-sm" id="${id}" ${isFinal?'disabled':''} onchange="${isGoal?`doAdminGoal(${gi},this.value)`:`doAdminCard(${gi},this.value)`}">${opts}</select>
+    ${set ? `<span class="event-tag" style="background:${isGoal?'#d1fae5':'#fee2e2'};color:${color}">✓ ${set.split('|')[0]}</span>` : ''}`;
+  setTimeout(() => { const s = document.getElementById(id); if (s && set) s.value = set; }, 0);
+  return d;
+}
+
+window.doSetResult = async (gi, status) => {
+  const h = parseInt(document.getElementById(`rh-${gi}`).value);
+  const a = parseInt(document.getElementById(`ra-${gi}`).value);
+  if (isNaN(h) || isNaN(a)) return;
+  results = results.map((r,i) => i===gi ? {h,a,status} : r);
+  await fbSet('results', results);
+};
+
+window.doAdminGoal = async (gi, val) => {
+  bonusEvents = bonusEvents.map((e,i) => i===gi ? {...e, firstGoal: val||null} : e);
+  await fbSet('bonusEvents', bonusEvents);
+};
+
+window.doAdminCard = async (gi, val) => {
+  bonusEvents = bonusEvents.map((e,i) => i===gi ? {...e, firstCard: val||null} : e);
+  await fbSet('bonusEvents', bonusEvents);
+};
+
+// ── TIPS ─────────────────────────────────────────────────────────────────────
+function mkTips() {
+  const wrap = document.createElement('div');
+  const pi = PLAYERS.findIndex(p => p.name === ME.name);
+  const [bg, fg] = ACOLORS[pi] || ACOLORS[0];
+  const savedCount = (tips[ME.name]||[]).filter(t => t !== null).length;
+  const openCount  = GAMES.filter((_,gi) => results[gi].status !== 'final').length;
+
+  notice(wrap, 'Ergebnis- und Bonus-Tipps können bis zum Abpfiff des jeweiligen Spiels beliebig oft geändert werden.');
+
+  // Player card
+  const pc = document.createElement('div');
+  pc.style.cssText = 'display:flex;align-items:center;gap:12px;margin-bottom:16px;background:#fff;border:2px solid #D4A017;border-radius:12px;padding:12px 14px';
+  pc.innerHTML = `
+    <div class="av" style="width:36px;height:36px;font-size:13px;background:${bg};color:${fg}">${ME.name.slice(0,2).toUpperCase()}</div>
+    <div>
+      <div style="font-size:15px;font-weight:600">${ME.name}<span class="gold-badge">Ich</span></div>
+      <div style="font-size:11px;color:#aaa;margin-top:2px">${savedCount} von 9 gespeichert · ${openCount} Spiele noch änderbar</div>
+    </div>`;
+  wrap.appendChild(pc);
+
+  GAMES.forEach((g, gi) => {
+    const r   = results[gi];
+    const t   = (tips[ME.name]||[])[gi];
+    const bt  = (bonusTips[ME.name]||[])[gi] || {goalScorer:null, cardPlayer:null};
+    const ev  = bonusEvents[gi] || {firstGoal:null, firstCard:null};
+    const isFinal   = r.status === 'final';
+    const isCorrect = isFinal && t && t.h === r.h && t.a === r.a;
+    const isWrong   = isFinal && t && !isCorrect;
+
+    let headBg = '#f9f9f9';
+    if (isCorrect) headBg = '#f0fdf4';
+    if (isWrong)   headBg = '#fff5f5';
+
+    let badge = '';
+    if (!isFinal && !t)  badge = '<span class="badge b-info">Offen</span>';
+    else if (!isFinal)   badge = '<span class="badge b-info">Änderbar</span>';
+    else if (isCorrect)  badge = '<span class="badge b-ok">✓ Richtig</span>';
+    else if (isWrong)    badge = '<span class="badge b-err">✗ Falsch</span>';
+    else                 badge = '<span class="badge b-muted">Gesperrt</span>';
+
+    const block = document.createElement('div');
+    block.className = 'tip-block';
+
+    // Score header
+    const head = document.createElement('div');
+    head.className = 'tip-head';
+    head.style.background = headBg;
+    head.innerHTML = `
+      <div style="text-align:right">
+        <div class="tip-abbr">${g.ha}</div>
+        <div class="tip-full">${g.home}</div>
+      </div>
+      <div class="tip-center">
+        ${badge}
+        <div class="tip-inputs-row">
+          <input class="ti${isFinal?' locked':''}" type="number" min="0" max="20" placeholder="–"
+            id="mti-${gi}-h" value="${t ? t.h : ''}" ${isFinal ? 'readonly' : ''}>
+          <span style="font-size:14px;color:#ccc;font-weight:300">:</span>
+          <input class="ti${isFinal?' locked':''}" type="number" min="0" max="20" placeholder="–"
+            id="mti-${gi}-a" value="${t ? t.a : ''}" ${isFinal ? 'readonly' : ''}>
+        </div>
+      </div>
+      <div>
+        <div class="tip-abbr">${g.aa}</div>
+        <div class="tip-full">${g.away}</div>
+      </div>`;
+
+    // Bonus
+    const bonusWrap = document.createElement('div');
+    bonusWrap.className = 'bonus-grid';
+    bonusWrap.appendChild(mkBonusTipCell(gi, 'goal', bt, ev, isFinal));
+    bonusWrap.appendChild(mkBonusTipCell(gi, 'card', bt, ev, isFinal));
+
+    block.appendChild(head);
+    block.appendChild(bonusWrap);
+    wrap.appendChild(block);
+  });
+
+  // Save button
+  const btn = document.createElement('button');
+  btn.className = 'save-btn';
+  btn.id = 'save-btn';
+  btn.disabled = openCount === 0;
+  btn.textContent = openCount === 0 ? 'Alle Spiele abgepfiffen' : 'Alle Tipps speichern';
+  btn.onclick = doSaveTips;
+  wrap.appendChild(btn);
+
+  const hintEl = document.createElement('div');
+  hintEl.className = 'hint';
+  hintEl.id = 'save-hint';
+  wrap.appendChild(hintEl);
+  return wrap;
+}
+
+function mkBonusTipCell(gi, type, bt, ev, isFinal) {
+  const isGoal  = type === 'goal';
+  const color   = isGoal ? '#1D9E75' : '#D30000';
+  const picked  = isGoal ? bt.goalScorer : bt.cardPlayer;
+  const event   = isGoal ? ev.firstGoal  : ev.firstCard;
+  const locked  = !!event || isFinal;
+  const id      = `b${isGoal?'g':'c'}t-${gi}`;
+  const g = GAMES[gi];
+
+  let sl = '+1 möglich', sc = 'bs-p';
+  if (event) {
+    if (picked && picked === event) { sl = '✓ +1 Punkt!'; sc = 'bs-ok'; }
+    else { sl = '✗ Kein Pkt'; sc = 'bs-err'; }
+  }
+
+  let opts = `<option value="">— Spieler wählen —</option>`;
+  opts += `<optgroup label="${g.home}">${(SQUADS[g.ha]||[]).map(n=>`<option value="${n}|${g.ha}">${n}</option>`).join('')}</optgroup>`;
+  opts += `<optgroup label="${g.away}">${(SQUADS[g.aa]||[]).map(n=>`<option value="${n}|${g.aa}">${n}</option>`).join('')}</optgroup>`;
+
+  const d = document.createElement('div');
+  d.className = `bonus-cell ${isGoal ? 'goal' : 'card'}`;
+  d.innerHTML = `
+    <div class="bml">
+      <span class="bml-title" style="color:${color}">${isGoal ? '⚽ Nächstes Tor' : '🟨 Nächste Karte'}</span>
+      <span class="bstatus ${sc}">${sl}</span>
+    </div>
+    <select class="sel-tip" id="${id}" ${locked?'disabled':''}>${opts}</select>
+    ${locked && event ? `<div style="font-size:10px;color:#aaa;margin-top:4px">🔒 ${event.split('|')[0]}</div>` : ''}`;
+  setTimeout(() => { const s = document.getElementById(id); if (s && picked) s.value = picked; }, 0);
+  return d;
+}
+
+window.doSaveTips = async () => {
+  const now = Date.now();
+  let anyMissing = false;
+  const nextTips  = JSON.parse(JSON.stringify(tips));
+  const nextBonus = JSON.parse(JSON.stringify(bonusTips));
+  if (!nextTips[ME.name])  nextTips[ME.name]  = GAMES.map(() => null);
+  if (!nextBonus[ME.name]) nextBonus[ME.name] = GAMES.map(() => ({goalScorer:null,cardPlayer:null}));
+
+  GAMES.forEach((_, gi) => {
+    if (results[gi].status === 'final') return;
+    const h = parseInt(document.getElementById(`mti-${gi}-h`)?.value);
+    const a = parseInt(document.getElementById(`mti-${gi}-a`)?.value);
+    if (isNaN(h) || isNaN(a)) { anyMissing = true; return; }
+    nextTips[ME.name][gi] = {h, a, ts: now};
+    const gs = document.getElementById(`bgt-${gi}`);
+    const cs = document.getElementById(`bct-${gi}`);
+    const ev = bonusEvents[gi] || {};
+    if (gs && !ev.firstGoal) nextBonus[ME.name][gi] = {...(nextBonus[ME.name][gi]||{}), goalScorer: gs.value || null};
+    if (cs && !ev.firstCard)  nextBonus[ME.name][gi] = {...(nextBonus[ME.name][gi]||{}), cardPlayer: cs.value || null};
+  });
+
+  const hint = document.getElementById('save-hint');
+  if (anyMissing) { if (hint) hint.textContent = '⚠ Bitte alle Ergebnis-Felder ausfüllen.'; return; }
+
+  const btn = document.getElementById('save-btn');
+  if (btn) { btn.className = 'save-btn saving'; btn.textContent = 'Speichern…'; btn.disabled = true; }
+
+  tips = nextTips; bonusTips = nextBonus;
+  await Promise.all([fbSet('tips', tips), fbSet('bonusTips', bonusTips)]);
+
+  if (btn) { btn.className = 'save-btn saved'; btn.textContent = '✓ Gespeichert!'; }
+  if (hint) hint.textContent = '';
+};
+
+// ── RANK ─────────────────────────────────────────────────────────────────────
+function mkRank() {
+  const wrap = document.createElement('div');
+  const finalPts  = calcPts('final');
+  const prevPts   = calcPts('preview');
+  const pts       = rankMode === 'preview' ? prevPts : finalPts;
+  const finished  = results.filter(r => r.status === 'final').length;
+
+  // Mode buttons
+  const modeBar = document.createElement('div');
+  modeBar.className = 'mode-btns';
+  ['final','preview'].forEach(m => {
+    const b = document.createElement('button');
+    b.className = 'mode-btn' + (rankMode === m ? (m==='final'?' mfinal':' mpreview') : '');
+    b.textContent = m === 'final' ? '🏆 Offizielle Wertung' : '▶ Status quo';
+    b.onclick = () => { rankMode = m; render(); };
+    modeBar.appendChild(b);
+  });
+  wrap.appendChild(modeBar);
+
+  if (rankMode === 'preview') {
+    const pb = document.createElement('div');
+    pb.className = 'preview-banner';
+    pb.textContent = 'Vorschau: Punktestand wenn jetzt abgepfiffen würde — inkl. aller Bonuspunkte.';
+    wrap.appendChild(pb);
+  } else {
+    notice(wrap, `${finished} von 9 Spielen abgeschlossen. Bonuspunkte werden sofort bei Eintragung vergeben.`);
+  }
+
+  sectionTitle(wrap, rankMode === 'preview' ? 'Vorschau-Rangliste' : 'Offizielle Rangliste');
+
+  const sorted = [...PLAYERS].sort((a,b) => { const d = pts[b.name]-pts[a.name]; return d!==0?d:a.pos-b.pos; });
+  const table = document.createElement('table');
+  table.className = 'rank-table';
+  table.innerHTML = `<thead><tr>
+    <th>Pos</th><th>Spieler</th>
+    <th class="hide-mobile" style="text-align:center">Tipps</th>
+    <th style="text-align:right">Punkte</th>
+  </tr></thead>`;
+  const tbody = document.createElement('tbody');
+
+  sorted.forEach((p, i) => {
+    const pPts  = pts[p.name];
+    const medal = i===0&&pPts>0?'🥇':i===1&&pPts>0?'🥈':i===2&&pPts>0?'🥉':'';
+    const pi    = PLAYERS.findIndex(x => x.name === p.name);
+    const [bg, fg] = ACOLORS[pi] || ACOLORS[0];
+    const isMe  = p.name === ME.name;
+    const diff  = rankMode === 'preview' ? prevPts[p.name] - finalPts[p.name] : 0;
+
+    const dotsHtml = GAMES.map((_, gi) => {
+      const r  = results[gi];
+      const t  = (tips[p.name]||[])[gi];
+      const ev = bonusEvents[gi] || {};
+      const bt = (bonusTips[p.name]||[])[gi] || {};
+      const ok = rankMode==='preview' ? (r.h!==null&&r.a!==null) : r.status==='final';
+      const hit = ok && t && t.h===r.h && t.a===r.a;
+      const resBg  = !ok ? '#e5e5e5' : (!t ? '#e5e5e5' : hit ? '#1D9E75' : '#fca5a5');
+      const gHit = ev.firstGoal && bt.goalScorer === ev.firstGoal;
+      const cHit = ev.firstCard  && bt.cardPlayer === ev.firstCard;
+      let html = `<span class="dot" style="background:${resBg}"></span>`;
+      if (ev.firstGoal || bt.goalScorer) html += `<span class="dot" style="background:${gHit?'#1D9E75':'#e5e5e5'};margin-left:1px"></span>`;
+      if (ev.firstCard  || bt.cardPlayer) html += `<span class="dot" style="background:${cHit?'#E24B4A':'#e5e5e5'};margin-left:1px"></span>`;
+      return `<span style="display:inline-flex;margin-right:4px">${html}</span>`;
+    }).join('');
+
+    const tr = document.createElement('tr');
+    if (isMe) tr.className = 'me-row';
+    tr.innerHTML = `
+      <td style="font-weight:600;color:#888;width:32px">${medal || (i+1)+'.'}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="av" style="width:28px;height:28px;font-size:10px;background:${bg};color:${fg}">${p.name.slice(0,2).toUpperCase()}</div>
+          <span style="font-size:13px;font-weight:${isMe?600:400}">${p.name}${isMe?`<span class="gold-badge">Ich</span>`:''}</span>
+        </div>
+      </td>
+      <td class="hide-mobile" style="text-align:center">
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:2px">${dotsHtml}</div>
+      </td>
+      <td style="text-align:right">
+        <span class="pts${rankMode==='preview'?' prev':''}">${pPts%1===0?pPts:pPts.toFixed(1)}</span>
+        ${diff>0?`<span style="font-size:11px;color:#1D9E75;margin-left:3px">+${diff%1===0?diff:diff.toFixed(1)}</span>`:''}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+
+  const legend = document.createElement('div');
+  legend.style.cssText = 'margin-top:12px;font-size:11px;color:#aaa;display:flex;gap:12px;flex-wrap:wrap';
+  legend.innerHTML = `
+    <span><span class="dot" style="background:#1D9E75;display:inline-block"></span> Ergebnis richtig</span>
+    <span><span class="dot" style="background:#fca5a5;display:inline-block"></span> Falsch</span>
+    <span><span class="dot" style="background:#e5e5e5;display:inline-block"></span> Offen</span>
+    <span><span class="dot" style="background:#1D9E75;display:inline-block"></span> Tor-Bonus</span>
+    <span><span class="dot" style="background:#E24B4A;display:inline-block"></span> Karten-Bonus</span>`;
+  wrap.appendChild(legend);
+  return wrap;
+}
+
+// ── INVITE ────────────────────────────────────────────────────────────────────
+function mkInvite() {
+  const wrap = document.createElement('div');
+  const ab = document.createElement('div');
+  ab.className = 'notice gold';
+  ab.innerHTML = '🔗 <strong>Personalisierte Einladungslinks.</strong> Jeder Spieler sieht nur seine eigenen Tipps. Alle Daten werden über Firebase in Echtzeit synchronisiert.';
+  wrap.appendChild(ab);
+  sectionTitle(wrap, 'Links verschicken');
+
+  const grid = document.createElement('div');
+  grid.className = 'invite-grid';
+
+  PLAYERS.forEach((p, i) => {
+    const pi = PLAYERS.findIndex(x => x.name === p.name);
+    const [bg, fg] = ACOLORS[pi] || ACOLORS[0];
+    const isMe = p.name === ADMIN;
+    const link = `${window.location.origin}${window.location.pathname}?spieler=${encodeURIComponent(p.name)}&token=${playerToken(p.name)}`;
+
+    const card = document.createElement('div');
+    card.className = 'inv-card' + (isMe ? ' me' : '');
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="av" style="width:34px;height:34px;font-size:13px;background:${bg};color:${fg}">${p.name.slice(0,2).toUpperCase()}</div>
+        <div>
+          <div style="font-size:13px;font-weight:600">${p.name}${isMe?`<span class="gold-badge">Admin</span>`:''}</div>
+          <div style="font-size:11px;color:#aaa">Rang ${p.pos}</div>
+        </div>
+      </div>
+      <div class="link-box">
+        <span class="link-text">${link}</span>
+        <button class="copy-btn" id="cp-${i}" onclick="doCopy('${link.replace(/'/g,"\\'")}',${i})">Kopieren</button>
+      </div>`;
+    grid.appendChild(card);
+  });
+  wrap.appendChild(grid);
+  return wrap;
+}
+
+window.doCopy = async (link, i) => {
+  try { await navigator.clipboard.writeText(link); }
+  catch { const t=document.createElement('textarea');t.value=link;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t); }
+  const btn = document.getElementById('cp-'+i);
+  if (btn) { btn.className='copy-btn done'; btn.textContent='✓ Kopiert!'; setTimeout(()=>{btn.className='copy-btn';btn.textContent='Kopieren';},2000); }
+};
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function notice(parent, text) {
+  const d = document.createElement('div');
+  d.className = 'notice';
+  d.innerHTML = text;
+  parent.appendChild(d);
+}
+function sectionTitle(parent, text) {
+  const d = document.createElement('div');
+  d.className = 'section-title';
+  d.textContent = text;
+  parent.appendChild(d);
+}
+
+// ── BOOT ─────────────────────────────────────────────────────────────────────
+(async () => {
+  try {
+    await loadAll();
+  } catch(e) {
+    console.warn('Initial load error:', e);
+  }
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  render();
+  startListener(); // live updates
+})();
+
+</script>
+</body>
+</html>
