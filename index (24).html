@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>No Homers Buli Tippspiel</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;background:#f4f4f4;color:#111;min-height:100vh}
+#app{max-width:680px;margin:0 auto;padding:12px 12px 60px}
+select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:26px!important}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{opacity:1}
+.header{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid #e0e0e0;margin-bottom:16px;background:#f4f4f4;position:sticky;top:0;z-index:10}
+.buli-badge{background:#D30000;color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px}
+.header-right{text-align:right}
+.header-date{font-size:12px;color:#666}
+.header-user{font-size:11px;color:#aaa;margin-top:2px}
+.tab-bar{display:flex;gap:2px;border-bottom:1px solid #e0e0e0;margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab{padding:9px 12px;font-size:13px;font-weight:500;background:none;border:none;border-bottom:2px solid transparent;color:#666;cursor:pointer;margin-bottom:-1px;white-space:nowrap;transition:all .15s}
+.tab.active{color:#D30000;border-bottom-color:#D30000}
+.tab.invite{color:#D4A017}.tab.invite.active{border-bottom-color:#D4A017}
+.notice{font-size:12px;color:#555;background:#fff;border-radius:8px;padding:9px 12px;margin-bottom:12px;line-height:1.5;border:1px solid #e8e8e8}
+.notice.gold{background:#fffbeb;border-color:#f0d070;color:#7a5c00}
+.notice.green{background:#f0fdf4;border-color:#bbf7d0;color:#065f46}
+.notice.purple{background:#faf5ff;border-color:#c4b5fd;color:#6d28d9}
+.section-title{font-size:10px;font-weight:600;color:#aaa;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+/* GAME CARD */
+.game-wrap{margin-bottom:10px}
+.game-card{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:8px}
+.game-card.has-events{border-radius:12px 12px 0 0;border-bottom:none}
+.team-side{flex:1}.team-side.r{text-align:right}
+.tname{font-size:12px;font-weight:600;color:#111}
+.tabbr{font-size:10px;color:#888}
+.score-center{min-width:90px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.score-num{font-size:22px;font-weight:600;letter-spacing:3px;color:#111}
+.pill{font-size:10px;padding:2px 9px;border-radius:20px;font-weight:500}
+.pill-scheduled{background:#e8f4fd;color:#1a6fad}
+.pill-live{background:#D30000;color:#fff;animation:blink 1.4s infinite}
+.pill-final{background:#f0f0f0;color:#777}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.6}}
+/* EVENTS LIST */
+.events-list{background:#fafafa;border:1px solid #e8e8e8;border-top:none;border-radius:0 0 12px 12px;padding:6px 12px}
+.event-item{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #f0f0f0;font-size:11px}
+.event-item:last-child{border-bottom:none}
+.event-min{font-weight:700;color:#888;min-width:28px}
+.event-icon{font-size:13px}
+.event-name{color:#111;font-weight:500}
+.event-team{color:#aaa;font-size:10px;margin-left:2px}
+/* LIVE BANNER FEED */
+.banner-feed{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.banner{background:#fff;border:1px solid #e8e8e8;border-radius:0 12px 12px 0;padding:11px 14px;display:flex;align-items:center;gap:10px;animation:slideIn .35s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.banner.b-goal{border-left:3px solid #1D9E75}
+.banner.b-card{border-left:3px solid #E24B4A}
+.banner.b-result{border-left:3px solid #D30000}
+.banner.b-torben{border-left:3px solid #7c3aed}
+.banner-icon{font-size:18px;flex-shrink:0}
+.banner-body{flex:1;min-width:0}
+.banner-title{font-size:12px;font-weight:600;color:#111;line-height:1.3}
+.banner-sub{font-size:11px;color:#777;margin-top:2px;overflow:hidden;text-overflow:ellipsis}
+.banner-right{text-align:right;flex-shrink:0}
+.banner-pts{font-size:14px;font-weight:700}
+.banner-pts.pts-goal{color:#1D9E75}
+.banner-pts.pts-card{color:#E24B4A}
+.banner-pts.pts-result{color:#D30000}
+.banner-pts.pts-torben{color:#7c3aed}
+.banner-time{font-size:10px;color:#aaa;display:block;margin-top:2px}
+.no-events{font-size:12px;color:#aaa;text-align:center;padding:20px 0;font-style:italic}
+/* TIP BLOCK */
+.tip-block{background:#fff;border:1px solid #e8e8e8;border-radius:12px;margin-bottom:10px;overflow:hidden}
+.tip-head{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;padding:10px 12px}
+.tip-abbr{font-size:12px;font-weight:600}
+.tip-full{font-size:9px;color:#aaa;margin-top:1px}
+.tip-center{display:flex;flex-direction:column;align-items:center;gap:5px}
+.tip-inputs-row{display:flex;align-items:center;gap:4px}
+.ti{width:32px;height:30px;text-align:center;font-size:14px;font-weight:500;border:1px solid #ccc;border-radius:6px;background:#fff}
+.ti:focus{outline:none;border-color:#D30000}
+.ti.locked{background:#f0f0f0;color:#aaa;cursor:not-allowed}
+.badge{font-size:9px;padding:2px 7px;border-radius:20px;font-weight:500;white-space:nowrap}
+.b-info{background:#e8f4fd;color:#1a6fad}
+.b-ok{background:#d1fae5;color:#065f46}
+.b-err{background:#fee2e2;color:#991b1b}
+.b-muted{background:#f0f0f0;color:#777}
+.bonus-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;border-top:1px solid #f0f0f0}
+.bonus-cell{border-radius:8px;padding:9px 10px}
+.bonus-cell.goal{background:#f0fdf4;border:1px solid #bbf7d0}
+.bonus-cell.card{background:#fff5f5;border:1px solid #fecaca}
+.bml{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.bml-title{font-size:10px;font-weight:600}
+.bstatus{font-size:9px;padding:2px 6px;border-radius:20px;font-weight:500}
+.bs-p{background:#fef3c7;color:#92400e}
+.bs-ok{background:#d1fae5;color:#065f46}
+.bs-err{background:#fee2e2;color:#991b1b}
+.sel-tip{width:100%;padding:5px 26px 5px 8px;font-size:11px;border:1px solid #ddd;border-radius:7px;background:#fff;cursor:pointer}
+.sel-tip:disabled{opacity:.55;cursor:not-allowed;background-image:none}
+.bonus-pts-tag{font-size:10px;font-weight:600;color:#1D9E75;margin-top:4px}
+/* TORBEN */
+.torben-card{background:#fff;border:2px solid #7c3aed;border-radius:14px;margin-bottom:16px;overflow:hidden}
+.torben-header{background:linear-gradient(135deg,#7c3aed,#a855f7);padding:12px 16px;display:flex;align-items:center;gap:10px}
+.torben-title{color:#fff;font-size:14px;font-weight:700}
+.torben-subtitle{color:rgba(255,255,255,.8);font-size:11px;margin-top:2px}
+.torben-body{padding:14px 16px}
+.torben-question{font-size:13px;font-weight:600;color:#111;margin-bottom:12px;line-height:1.4}
+.torben-input-row{display:flex;align-items:center;gap:10px}
+.torben-minute-input{width:70px;height:38px;text-align:center;font-size:18px;font-weight:700;border:2px solid #ddd;border-radius:8px;background:#fff;color:#111}
+.torben-minute-input:focus{outline:none;border-color:#7c3aed}
+.torben-minute-input:disabled{background:#f5f5f5;color:#aaa;cursor:not-allowed}
+.torben-status{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500;margin-left:auto}
+.ts-pending{background:#ede9fe;color:#7c3aed}
+.ts-hit{background:#d1fae5;color:#065f46}
+.ts-miss{background:#fee2e2;color:#991b1b}
+.torben-result-banner{margin-top:10px;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:500}
+.torben-result-banner.hit{background:#d1fae5;color:#065f46;border:1px solid #bbf7d0}
+.torben-result-banner.miss{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+/* ADMIN TORBEN */
+.torben-admin-box{background:#f9f9f9;border:1px solid #e8e8e8;border-radius:10px;padding:12px 14px;margin-top:16px}
+.torben-admin-label{font-size:11px;font-weight:600;color:#7c3aed;margin-bottom:8px}
+.torben-admin-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.torben-admin-input{width:70px;height:34px;text-align:center;font-size:16px;font-weight:700;border:2px solid #c4b5fd;border-radius:8px;background:#fff;color:#111}
+.torben-admin-input:focus{outline:none;border-color:#7c3aed}
+.torben-set-btn{padding:6px 14px;font-size:12px;font-weight:600;border:none;border-radius:8px;cursor:pointer;background:#7c3aed;color:#fff}
+.torben-set-btn.clear{background:#f5f5f5;color:#888;border:1px solid #ddd}
+/* SAVE */
+.save-btn{width:100%;margin-top:6px;padding:12px;font-size:14px;font-weight:600;border-radius:10px;cursor:pointer;border:none;background:#D4A017;color:#fff;transition:all .2s}
+.save-btn:disabled{background:#ccc;cursor:not-allowed}
+.save-btn.saving{background:#888}
+.save-btn.saved{background:#1D9E75}
+.hint{font-size:11px;color:#D4A017;text-align:center;margin-top:6px;min-height:16px}
+/* RANK */
+.rank-table{width:100%;border-collapse:collapse}
+.rank-table th{font-size:10px;font-weight:600;color:#aaa;text-align:left;padding:6px 8px;border-bottom:1px solid #e8e8e8;letter-spacing:.04em}
+.rank-table td{padding:10px 8px;border-bottom:1px solid #f0f0f0;font-size:13px}
+.rank-table tr:last-child td{border-bottom:none}
+.rank-table tr.me-row td{background:#fffbeb}
+.pts{font-size:15px;font-weight:700;color:#D30000}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.mode-btns{display:flex;gap:8px;margin-bottom:14px}
+.mode-btn{padding:7px 14px;font-size:12px;font-weight:500;border-radius:20px;border:1px solid #ddd;cursor:pointer;background:#f5f5f5;color:#666;transition:all .15s}
+.mode-btn.mfinal{background:#D30000;color:#fff;border-color:#D30000}
+.mode-btn.mpreview{background:#1D9E75;color:#fff;border-color:#1D9E75}
+.preview-banner{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#065f46}
+/* INVITE */
+.invite-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.inv-card{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:14px}
+.inv-card.me{border-color:#D4A017}
+.link-box{display:flex;align-items:center;gap:6px;background:#f5f5f5;border-radius:8px;padding:7px 10px;margin-top:10px}
+.link-text{flex:1;font-size:10px;color:#555;word-break:break-all;line-height:1.4}
+.copy-btn{flex-shrink:0;padding:5px 11px;font-size:11px;border:1px solid #ddd;border-radius:6px;cursor:pointer;background:#fff;font-weight:500}
+.copy-btn.done{background:#1D9E75;color:#fff;border-color:#1D9E75}
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0}
+.gold-badge{font-size:9px;background:#D4A017;color:#fff;padding:2px 7px;border-radius:20px;margin-left:6px;vertical-align:1px;font-weight:500}
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:14px}
+.spinner{width:38px;height:38px;border:3px solid #D30000;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#1D9E75;display:inline-block;margin-right:5px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@media(max-width:480px){.bonus-grid{grid-template-columns:1fr}.invite-grid{grid-template-columns:1fr}.hide-mobile{display:none}#app{padding:8px 8px 60px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="loading" id="loading"><div class="spinner"></div><p style="font-size:13px;color:#666">Lade Tippspiel…</p></div>
+  <div id="main" style="display:none"></div>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyB1cJY_5gsf8St6X9yHmnHc59D5_SG63PI",
+  authDomain:"no-homers-buli-tippspiel.firebaseapp.com",
+  databaseURL:"https://no-homers-buli-tippspiel-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"no-homers-buli-tippspiel",
+  storageBucket:"no-homers-buli-tippspiel.firebasestorage.app",
+  messagingSenderId:"1029615433030",
+  appId:"1:1029615433030:web:b5f11fab42e4a7bdd32147"
+};
+const fbApp=initializeApp(firebaseConfig);
+const db=getDatabase(fbApp);
+
+const API_KEY='fcd3c805e0be3753ccf744e14c799480';
+const API_HOST='v3.football.api-sports.io';
+const LEAGUE_ID=78, SEASON=2025;
+
+const GAMES=[
+  {home:"Bayern München",   ha:"FCB",away:"1. FC Köln",          aa:"KOE"},
+  {home:"Bayer Leverkusen", ha:"LEV",away:"Hamburger SV",        aa:"HSV"},
+  {home:"Eintracht Frankfurt",ha:"SGE",away:"VfB Stuttgart",     aa:"VFB"},
+  {home:"SC Freiburg",      ha:"SCF",away:"RB Leipzig",          aa:"RBL"},
+  {home:"Werder Bremen",    ha:"SVW",away:"Borussia Dortmund",   aa:"BVB"},
+  {home:"Borussia M'gladbach",ha:"BMG",away:"TSG Hoffenheim",    aa:"TSG"},
+  {home:"Union Berlin",     ha:"UNI",away:"FC Augsburg",         aa:"FCA"},
+  {home:"FC St. Pauli",     ha:"STP",away:"VfL Wolfsburg",       aa:"WOB"},
+  {home:"1. FC Heidenheim", ha:"FCH",away:"FSV Mainz 05",        aa:"M05"},
+];
+
+const PLAYERS=[
+  {name:"Hoirkman",pos:1},{name:"Kroesinho",pos:2},{name:"Sigmeister",pos:3},
+  {name:"Daniel",pos:4},{name:"Christian",pos:5},{name:"Huendin",pos:6},
+  {name:"Helgster",pos:7},{name:"DaLucio",pos:8},{name:"Tipphipster",pos:9},
+  {name:"MaverickTH",pos:10},{name:"Horstwith",pos:11},{name:"Gunaldinho",pos:12},
+];
+
+const ACOLORS=[
+  ["#dbeafe","#1e40af"],["#dcfce7","#166534"],["#fef9c3","#854d0e"],
+  ["#fee2e2","#991b1b"],["#ede9fe","#5b21b6"],["#fef3c7","#92400e"],
+  ["#fce7f3","#9d174d"],["#f1f5f9","#334155"],["#e0f2fe","#0c4a6e"],
+  ["#fef2f2","#7f1d1d"],["#f0fdf4","#14532d"],["#fff7ed","#7c2d12"],
+];
+
+const ADMIN="Huendin";
+
+function playerToken(n){let h=0;for(let i=0;i<n.length;i++)h=(Math.imul(31,h)+n.charCodeAt(i))|0;return Math.abs(h).toString(36).padStart(6,'0');}
+
+const params=new URLSearchParams(window.location.search);
+const urlSpieler=params.get('spieler'),urlToken=params.get('token');
+let ME=null;
+if(urlSpieler&&urlToken){const f=PLAYERS.find(p=>p.name===urlSpieler);if(f&&playerToken(f.name)===urlToken)ME=f;}
+if(!ME)ME=PLAYERS.find(p=>p.name===ADMIN);
+const IS_ADMIN=ME.name===ADMIN;
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+// results[gi] = {h, a, status, minute}  — from API
+// gameEvents[gi] = [ {type:'goal'|'card', player:'Name', team:'ABB', minute:23, ts:timestamp}, ... ]
+// bonusTips[playerName][gi] = {goalScorer: 'Name|ABB', cardPlayer: 'Name|ABB'}  — current tip (changes anytime)
+// bonusPoints[playerName][gi] = {goals: N, cards: N}  — accumulated points from past events
+// tips[playerName][gi] = {h, a, ts}
+// torbenTips[playerName] = minute|null
+// torbenResult = {minute:N}|null
+// squads[gi] = {home:[],away:[],loaded:bool}
+// fixtureIds[gi] = number|null
+
+let results     = GAMES.map(()=>({h:null,a:null,status:'scheduled'}));
+let gameEvents  = GAMES.map(()=>[]); // all goal/card events per game
+let tips        = Object.fromEntries(PLAYERS.map(p=>[p.name,GAMES.map(()=>null)]));
+let bonusTips   = Object.fromEntries(PLAYERS.map(p=>[p.name,GAMES.map(()=>({goalScorer:null,cardPlayer:null}))]));
+let bonusPoints = Object.fromEntries(PLAYERS.map(p=>[p.name,GAMES.map(()=>({goals:0,cards:0}))]));
+let torbenTips  = Object.fromEntries(PLAYERS.map(p=>[p.name,null]));
+let torbenResult= null;
+let squads      = GAMES.map(()=>({home:[],away:[],loaded:false}));
+let fixtureIds  = GAMES.map(()=>null);
+let currentTab  = 'live', rankMode='final';
+let lastApiCall = 0; // throttle
+
+// ── FIREBASE ──────────────────────────────────────────────────────────────────
+async function fbSet(path,val){await set(ref(db,path),val);}
+async function fbGet(path,fb){try{const s=await get(ref(db,path));return s.exists()?s.val():fb;}catch{return fb;}}
+
+function mergeTips(d){
+  const base=Object.fromEntries(PLAYERS.map(p=>[p.name,GAMES.map(()=>null)]));
+  if(!d)return base;PLAYERS.forEach(p=>{if(d[p.name])base[p.name]=d[p.name];});return base;
+}
+function mergeBonusTips(d){
+  const base=Object.fromEntries(PLAYERS.map(p=>[p.name,GAMES.map(()=>({goalScorer:null,cardPlayer:null}))]));
+  if(!d)return base;PLAYERS.forEach(p=>{if(d[p.name])base[p.name]=d[p.name];});return base;
+}
+function mergeBonusPoints(d){
+  const base=Object.fromEntries(PLAYERS.map(p=>[p.name,GAMES.map(()=>({goals:0,cards:0}))]));
+  if(!d)return base;PLAYERS.forEach(p=>{if(d[p.name])base[p.name]=d[p.name].map(g=>g||{goals:0,cards:0});});return base;
+}
+function mergeTorbenTips(d){
+  const base=Object.fromEntries(PLAYERS.map(p=>[p.name,null]));
+  if(!d)return base;PLAYERS.forEach(p=>{if(d[p.name]!==undefined)base[p.name]=d[p.name];});return base;
+}
+
+async function loadAll(){
+  const [r,ge,t,bt,bp,tt,tr,fids,sq]=await Promise.all([
+    fbGet('results',     GAMES.map(()=>({h:null,a:null,status:'scheduled'}))),
+    fbGet('gameEvents',  GAMES.map(()=>[])),
+    fbGet('tips',        null),
+    fbGet('bonusTips',   null),
+    fbGet('bonusPoints', null),
+    fbGet('torbenTips',  null),
+    fbGet('torbenResult',null),
+    fbGet('fixtureIds',  GAMES.map(()=>null)),
+    fbGet('squads',      GAMES.map(()=>({home:[],away:[],loaded:false}))),
+  ]);
+  results     =Array.isArray(r)?r:GAMES.map(()=>({h:null,a:null,status:'scheduled'}));
+  gameEvents  =Array.isArray(ge)?ge.map(g=>g||[]):GAMES.map(()=>[]);
+  tips        =mergeTips(t);
+  bonusTips   =mergeBonusTips(bt);
+  bonusPoints =mergeBonusPoints(bp);
+  torbenTips  =mergeTorbenTips(tt);
+  torbenResult=tr||null;
+  fixtureIds  =Array.isArray(fids)?fids:GAMES.map(()=>null);
+  squads      =Array.isArray(sq)?sq.map(s=>s||{home:[],away:[],loaded:false}):GAMES.map(()=>({home:[],away:[],loaded:false}));
+}
+
+function startListener(){
+  onValue(ref(db,'/'),snap=>{
+    if(!snap.exists())return;
+    const d=snap.val();
+    if(d.results)    results    =Array.isArray(d.results)?d.results:results;
+    if(d.gameEvents) gameEvents =Array.isArray(d.gameEvents)?d.gameEvents.map(g=>g||[]):gameEvents;
+    if(d.tips)       tips       =mergeTips(d.tips);
+    if(d.bonusTips)  bonusTips  =mergeBonusTips(d.bonusTips);
+    if(d.bonusPoints)bonusPoints=mergeBonusPoints(d.bonusPoints);
+    if(d.torbenTips) torbenTips =mergeTorbenTips(d.torbenTips);
+    if(d.hasOwnProperty('torbenResult'))torbenResult=d.torbenResult||null;
+    if(d.fixtureIds) fixtureIds =Array.isArray(d.fixtureIds)?d.fixtureIds:fixtureIds;
+    if(d.squads)     squads     =Array.isArray(d.squads)?d.squads.map(s=>s||{home:[],away:[],loaded:false}):squads;
+    render();
+  });
+}
+
+// ── API-FOOTBALL ──────────────────────────────────────────────────────────────
+async function apiFetch(ep){
+  const res=await fetch(`https://${API_HOST}${ep}`,{headers:{'x-apisports-key':API_KEY}});
+  return res.json();
+}
+function nameMatch(a,b){const c=s=>s.toLowerCase().replace(/[^a-z0-9]/g,'');return c(a).includes(c(b).slice(0,5))||c(b).includes(c(a).slice(0,5));}
+
+async function ensureFixtureIds(){
+  if(fixtureIds.every(id=>id!==null))return;
+  try{
+    const data=await apiFetch(`/fixtures?league=${LEAGUE_ID}&season=${SEASON}&round=Regular+Season+-+34`);
+    if(!data.response?.length)return;
+    const newIds=[...fixtureIds];
+    data.response.forEach(fix=>{
+      const gi=GAMES.findIndex(g=>nameMatch(g.home,fix.teams.home.name)&&nameMatch(g.away,fix.teams.away.name));
+      if(gi>=0)newIds[gi]=fix.fixture.id;
+    });
+    fixtureIds=newIds;
+    await fbSet('fixtureIds',fixtureIds);
+  }catch(e){console.warn('fixture ids',e);}
+}
+
+// Fetch live data for all games: scores + events
+async function fetchLiveData(){
+  const now=Date.now();
+  if(now-lastApiCall<55000)return; // max once per 55s
+  lastApiCall=now;
+  await ensureFixtureIds();
+
+  const validIds=fixtureIds.filter(id=>id!==null);
+  if(!validIds.length)return;
+
+  try{
+    // Fetch all fixtures in one call
+    const ids=fixtureIds.map(id=>id||'').filter(Boolean).join('-');
+    const data=await apiFetch(`/fixtures?ids=${ids}`);
+    if(!data.response?.length)return;
+
+    let resultsChanged=false, eventsChanged=false;
+    const newResults=[...results];
+    const newEvents=gameEvents.map(g=>[...g]);
+
+    data.response.forEach(fix=>{
+      const gi=fixtureIds.indexOf(fix.fixture.id);
+      if(gi<0)return;
+
+      // Update score
+      const h=fix.goals.home??null;
+      const a=fix.goals.away??null;
+      const statusShort=fix.fixture.status.short;
+      const status=statusShort==='FT'||statusShort==='AET'||statusShort==='PEN'?'final':
+                   statusShort==='NS'||statusShort==='TBD'?'scheduled':'live';
+
+      if(newResults[gi].h!==h||newResults[gi].a!==a||newResults[gi].status!==status){
+        newResults[gi]={h,a,status};resultsChanged=true;
+      }
+
+      // Process events
+      const apiEvents=fix.events||[];
+      const existingIds=new Set(newEvents[gi].map(e=>e.id));
+      let gameEventsChanged=false;
+
+      apiEvents.forEach(ev=>{
+        const isGoal=ev.type==='Goal'&&ev.detail!=='Missed Penalty'&&ev.detail!=='Own Goal';
+        const isOwnGoal=ev.type==='Goal'&&ev.detail==='Own Goal';
+        const isCard=ev.type==='Card';
+        if(!isGoal&&!isCard&&!isOwnGoal)return;
+
+        const evId=`${gi}-${ev.type}-${ev.player?.name}-${ev.time?.elapsed}`;
+        if(existingIds.has(evId))return;
+
+        // Find which team abbr
+        const teamAbbr=nameMatch(GAMES[gi].home,ev.team?.name)?GAMES[gi].ha:GAMES[gi].aa;
+        const newEv={
+          id:evId,
+          type:isGoal?'goal':isOwnGoal?'owngoal':'card',
+          cardType:isCard?(ev.detail==='Yellow Card'?'yellow':ev.detail==='Red Card'?'red':'yellow-red'):null,
+          player:ev.player?.name||'Unbekannt',
+          team:teamAbbr,
+          minute:ev.time?.elapsed||0,
+          ts:Date.now(),
+        };
+        newEvents[gi].push(newEv);
+        newEvents[gi].sort((a,b)=>a.minute-b.minute);
+        gameEventsChanged=true;
+        eventsChanged=true;
+      });
+
+      // If events changed, recalculate bonus points
+      if(gameEventsChanged){
+        recalcBonusPoints(gi, newEvents[gi]);
+      }
+    });
+
+    if(resultsChanged){results=newResults;await fbSet('results',results);}
+    if(eventsChanged){gameEvents=newEvents;await fbSet('gameEvents',gameEvents);await fbSet('bonusPoints',bonusPoints);}
+    if(resultsChanged||eventsChanged)render();
+  }catch(e){console.warn('live fetch',e);}
+}
+
+// Recalculate bonus points for a game based on events and tips at event time
+// For each event, look at each player's bonusTip at that moment (we use current tip
+// since we store the tip with ts — if tip.ts < event.ts, that tip was active)
+function recalcBonusPoints(gi, events){
+  PLAYERS.forEach(p=>{
+    let goals=0, cards=0;
+    const myTips=(bonusTips[p.name]||[]); // current tips — used for scoring
+    const currentGoalTip=(myTips[gi]||{}).goalScorer||null;
+    const currentCardTip=(myTips[gi]||{}).cardPlayer||null;
+
+    events.forEach(ev=>{
+      const playerKey=`${ev.player}|${ev.team}`;
+      if(ev.type==='goal'&&currentGoalTip===playerKey) goals++;
+      if(ev.type==='card'&&currentCardTip===playerKey) cards++;
+    });
+    if(!bonusPoints[p.name])bonusPoints[p.name]=GAMES.map(()=>({goals:0,cards:0}));
+    bonusPoints[p.name][gi]={goals,cards};
+  });
+}
+
+// Recalc ALL games bonus points (e.g. after a tip change)
+function recalcAllBonusPoints(){
+  GAMES.forEach((_,gi)=>recalcBonusPoints(gi,gameEvents[gi]||[]));
+}
+
+async function fetchLineup(gi){
+  const fid=fixtureIds[gi];
+  if(!fid||(squads[gi]?.loaded&&squads[gi].home.length>0))return;
+  try{
+    const data=await apiFetch(`/fixtures/lineups?fixture=${fid}`);
+    if(!data.response?.length)return;
+    const newSquads=[...squads];
+    const hT=data.response.find(t=>nameMatch(GAMES[gi].home,t.team.name));
+    const aT=data.response.find(t=>nameMatch(GAMES[gi].away,t.team.name));
+    const names=t=>t?[...(t.startXI||[]).map(p=>p.player.name),...(t.substitutes||[]).map(p=>p.player.name)]:[];
+    newSquads[gi]={home:names(hT),away:names(aT),loaded:true};
+    squads=newSquads;
+    await fbSet('squads',squads);render();
+  }catch(e){console.warn('lineup',gi,e);}
+}
+
+async function fetchAllLineups(){
+  await ensureFixtureIds();
+  await Promise.all(GAMES.map((_,gi)=>fixtureIds[gi]&&(!squads[gi]?.loaded||!squads[gi].home.length)?fetchLineup(gi):Promise.resolve()));
+}
+
+// ── POINTS ────────────────────────────────────────────────────────────────────
+function calcPts(mode){
+  const pts=Object.fromEntries(PLAYERS.map(p=>[p.name,0]));
+  const now=Date.now();
+  // Result points
+  GAMES.forEach((_,gi)=>{
+    const r=results[gi];
+    const ok=mode==='preview'?(r.h!==null&&r.a!==null):r.status==='final';
+    if(!ok)return;
+    const winners=PLAYERS.filter(p=>{const t=(tips[p.name]||[])[gi];return t&&t.h===r.h&&t.a===r.a;});
+    if(winners.length){
+      const byS={};winners.forEach(p=>{const ts=mode==='preview'?now:((tips[p.name][gi]||{}).ts||now);const s=Math.floor(ts/1000);(byS[s]=byS[s]||[]).push(p.name);});
+      const ms=Math.min(...Object.keys(byS).map(Number));byS[ms].forEach(n=>pts[n]+=1/byS[ms].length);
+    }
+  });
+  // Bonus points from events (goals + cards per game)
+  PLAYERS.forEach(p=>{
+    GAMES.forEach((_,gi)=>{
+      const bp=(bonusPoints[p.name]||[])[gi]||{goals:0,cards:0};
+      pts[p.name]+=(bp.goals||0)+(bp.cards||0);
+    });
+  });
+  // Torben bonus — 5 Punkte, bei Gleichstand geteilt
+  if(torbenResult){
+    const correct=PLAYERS.filter(p=>torbenTips[p.name]===torbenResult.minute);
+    if(correct.length){const share=5/correct.length;correct.forEach(p=>pts[p.name]+=share);}
+  }
+  return pts;
+}
+
+// ── SQUAD OPTIONS ─────────────────────────────────────────────────────────────
+function squadOptsHtml(gi){
+  const sq=squads[gi]||{};const g=GAMES[gi];
+  if(!sq.loaded)return`<option value="">⏳ Aufstellung wird geladen…</option>`;
+  if(!sq.home?.length&&!sq.away?.length)return`<option value="">⏳ Noch nicht bekannt</option>`;
+  let o=`<option value="">— Spieler wählen —</option>`;
+  if(sq.home?.length){o+=`<optgroup label="▶ ${g.home}">${sq.home.map(n=>`<option value="${n}|${g.ha}">${n}</option>`).join('')}</optgroup>`;}
+  if(sq.away?.length){o+=`<optgroup label="▶ ${g.away}">${sq.away.map(n=>`<option value="${n}|${g.aa}">${n}</option>`).join('')}</optgroup>`;}
+  return o;
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render(){
+  const main=document.getElementById('main');main.innerHTML='';
+  main.appendChild(mkHeader());main.appendChild(mkTabs());
+  const view=document.createElement('div');
+  if(currentTab==='live')  view.appendChild(mkLive());
+  if(currentTab==='tips')  view.appendChild(mkTips());
+  if(currentTab==='rank')  view.appendChild(mkRank());
+  if(currentTab==='invite'&&IS_ADMIN)view.appendChild(mkInvite());
+  main.appendChild(view);
+}
+
+function mkHeader(){
+  const d=document.createElement('div');d.className='header';
+  d.innerHTML=`<div style="display:flex;align-items:center;gap:10px"><span class="buli-badge">Bundesliga</span><span style="font-size:13px;color:#555;font-weight:500">34. Spieltag</span></div>
+  <div class="header-right"><div class="header-date"><span class="sync-dot"></span>Live</div><div class="header-user">${ME.name}${IS_ADMIN?' · Admin':''}</div></div>`;
+  return d;
+}
+
+function mkTabs(){
+  const tabs=IS_ADMIN?['live','tips','rank','invite']:['live','tips','rank'];
+  const labels={live:'⚽ Ergebnisse',tips:'✏️ Meine Tipps',rank:'🏆 Rangliste',invite:'🔗 Einladungen'};
+  const bar=document.createElement('div');bar.className='tab-bar';
+  tabs.forEach(t=>{
+    const btn=document.createElement('button');
+    btn.className='tab'+(t===currentTab?' active':'')+(t==='invite'?' invite':'');
+    btn.textContent=labels[t];btn.onclick=()=>{currentTab=t;render();};bar.appendChild(btn);
+  });
+  return bar;
+}
+
+// ── LIVE VIEW ─────────────────────────────────────────────────────────────────
+
+// Build the flat banner feed from all events + results + torben
+function buildBannerFeed(){
+  const feed=[];
+  // Goal and card events
+  GAMES.forEach((g,gi)=>{
+    const evs=gameEvents[gi]||[];
+    evs.forEach(ev=>{
+      const isGoal=ev.type==='goal'||ev.type==='owngoal';
+      const isCard=ev.type==='card';
+      // Who got points for this event?
+      const winners=PLAYERS.filter(p=>{
+        const bt=(bonusTips[p.name]||[])[gi]||{};
+        const key=`${ev.player}|${ev.team}`;
+        return isGoal?bt.goalScorer===key:bt.cardPlayer===key;
+      });
+      const icon=ev.type==='goal'?'⚽':ev.type==='owngoal'?'⚽🔴':ev.cardType==='yellow'?'🟨':ev.cardType==='red'?'🟥':'🟨🟥';
+      const typeLabel=isGoal?'Tor':'Karte';
+      feed.push({
+        type:isGoal?'goal':'card',
+        icon,
+        title:`${ev.minute}' — ${ev.player} (${ev.team}): ${typeLabel}`,
+        sub:winners.length?`+1 Pkt: ${winners.map(p=>p.name).join(', ')}`:'Niemand hatte diesen Spieler getippt',
+        pts:winners.length?'+1':null,
+        ptsClass:isGoal?'pts-goal':'pts-card',
+        ts:ev.ts||0,
+        gi,
+      });
+    });
+    // Final result
+    const r=results[gi];
+    if(r.status==='final'){
+      const winners=PLAYERS.filter(p=>{const t=(tips[p.name]||[])[gi];return t&&t.h===r.h&&t.a===r.a;});
+      feed.push({
+        type:'result',
+        icon:'✅',
+        title:`Abpfiff: ${g.home} ${r.h} : ${r.a} ${g.away}`,
+        sub:winners.length?`Richtiges Ergebnis: ${winners.map(p=>p.name).join(', ')}`:'Niemand hat das Ergebnis richtig getippt',
+        pts:winners.length?'+1':null,
+        ptsClass:'pts-result',
+        ts:r.ts||(Date.now()-1000),
+        gi,
+      });
+    }
+  });
+  // Torben result
+  if(torbenResult){
+    const winners=PLAYERS.filter(p=>torbenTips[p.name]===torbenResult.minute);
+    const share=winners.length>0?5/winners.length:0;
+    feed.push({
+      type:'torben',
+      icon:'😭',
+      title:`Torben Lang VAR aufgelöst: ${torbenResult.minute}. Minute`,
+      sub:winners.length?`+${share%1===0?share:share.toFixed(2)} Pkte: ${winners.map(p=>p.name).join(', ')}`:'Niemand hat die richtige Minute getippt',
+      pts:winners.length?`+${share%1===0?share:share.toFixed(1)}`:null,
+      ptsClass:'pts-torben',
+      ts:torbenResult.ts||Date.now(),
+    });
+  }
+  // Sort by ts descending (newest first)
+  feed.sort((a,b)=>b.ts-a.ts);
+  return feed;
+}
+
+function fmtTime(ts){
+  if(!ts)return'';
+  const d=new Date(ts);
+  return d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr';
+}
+
+function mkLive(){
+  const wrap=document.createElement('div');
+  notice(wrap,'Ergebnisse und Ereignisse werden automatisch von API-Football abgerufen. <span class="sync-dot"></span> alle 60 Sekunden.');
+
+  // ── BANNER FEED (top) ──
+  sectionTitle(wrap,'Aktuelle Punktegewinne');
+  const feed=buildBannerFeed();
+  const feedEl=document.createElement('div');feedEl.className='banner-feed';
+
+  if(feed.length===0){
+    const empty=document.createElement('div');empty.className='no-events';
+    empty.textContent='Noch keine Ereignisse — die Spiele beginnen um 15:30 Uhr.';
+    feedEl.appendChild(empty);
+  } else {
+    feed.forEach(item=>{
+      const b=document.createElement('div');
+      b.className=`banner b-${item.type}`;
+      b.innerHTML=`
+        <span class="banner-icon">${item.icon}</span>
+        <div class="banner-body">
+          <div class="banner-title">${item.title}</div>
+          <div class="banner-sub">${item.sub}</div>
+        </div>
+        <div class="banner-right">
+          ${item.pts?`<div class="banner-pts ${item.ptsClass}">${item.pts}</div>`:''}
+          <span class="banner-time">${fmtTime(item.ts)}</span>
+        </div>`;
+      feedEl.appendChild(b);
+    });
+  }
+  wrap.appendChild(feedEl);
+
+  // ── GAME SCORES ──
+  sectionTitle(wrap,'Spielergebnisse — 15:30 Uhr');
+  GAMES.forEach((g,gi)=>{
+    const r=results[gi];const evs=gameEvents[gi]||[];
+    const scoreStr=r.status==='scheduled'?'– : –':`${r.h??'–'} : ${r.a??'–'}`;
+    const hasEvs=evs.length>0;
+    const gw=document.createElement('div');gw.className='game-wrap';
+    const gc=document.createElement('div');
+    gc.className='game-card'+(hasEvs?' has-events':'');
+    gc.innerHTML=`
+      <div class="team-side r"><div class="tname">${g.home}</div><div class="tabbr">${g.ha}</div></div>
+      <div class="score-center">
+        <div class="score-num">${scoreStr}</div>
+        <span class="pill pill-${r.status}">${r.status==='scheduled'?'15:30':r.status==='live'?'Live':'Abpfiff'}</span>
+        ${IS_ADMIN?`<div style="display:flex;align-items:center;gap:4px;margin-top:5px">
+          <input id="rh-${gi}" type="number" min="0" max="20" placeholder="H" value="${r.h!==null?r.h:''}" style="width:28px;height:26px;text-align:center;font-size:12px;border:1px solid #ccc;border-radius:5px">
+          <span style="font-size:11px;color:#bbb">:</span>
+          <input id="ra-${gi}" type="number" min="0" max="20" placeholder="A" value="${r.a!==null?r.a:''}" style="width:28px;height:26px;text-align:center;font-size:12px;border:1px solid #ccc;border-radius:5px">
+          <button onclick="doSetResult(${gi},'live')" style="font-size:10px;padding:3px 7px;border:1px solid #ccc;border-radius:5px;cursor:pointer;background:#f5f5f5">▶</button>
+          <button onclick="doSetResult(${gi},'final')" style="font-size:10px;padding:3px 7px;border:none;border-radius:5px;cursor:pointer;background:#D30000;color:#fff">✓</button>
+        </div>`:''}
+      </div>
+      <div class="team-side"><div class="tname">${g.away}</div><div class="tabbr">${g.aa}</div></div>`;
+    gw.appendChild(gc);
+    if(hasEvs){
+      const el=document.createElement('div');el.className='events-list';
+      evs.forEach(ev=>{
+        const icon=ev.type==='goal'?'⚽':ev.type==='owngoal'?'⚽🔴':ev.cardType==='yellow'?'🟨':ev.cardType==='red'?'🟥':'🟨🟥';
+        const item=document.createElement('div');item.className='event-item';
+        item.innerHTML=`<span class="event-min">${ev.minute}'</span><span class="event-icon">${icon}</span><span class="event-name">${ev.player}</span><span class="event-team">(${ev.team})</span>`;
+        el.appendChild(item);
+      });
+      gw.appendChild(el);
+    }
+    wrap.appendChild(gw);
+  });
+
+  // Torben admin box goes in left col
+  // Squad status + Torben admin box
+  if(IS_ADMIN){
+    const loaded=squads.filter(s=>s&&s.loaded&&s.home.length>0).length;
+    const statusDiv=document.createElement('div');
+    statusDiv.className='notice'+(loaded===9?' green':'');
+    statusDiv.innerHTML='📋 <strong>Aufstellungen: '+loaded+'/9 geladen</strong>'+(loaded<9?' — wird alle 5 Min. automatisch aktualisiert':' ✓ Alle verfügbar');
+    wrap.appendChild(statusDiv);
+    wrap.appendChild(mkAdminTorbenBox());
+  }
+
+  return wrap;
+}
+
+function mkAdminTorbenBox(){
+  const box=document.createElement('div');box.className='torben-admin-box';
+  const result=torbenResult;
+  box.innerHTML=`<div class="torben-admin-label">😭 Torben Lang VAR — Auflösung eintragen</div>
+    <div style="font-size:12px;color:#555;margin-bottom:10px">In welcher Minute hat Torben über den VAR geheult?</div>
+    <div class="torben-admin-row">
+      <input class="torben-admin-input" type="number" min="1" max="120" placeholder="––" id="torben-admin-min" value="${result?result.minute:''}">
+      <span style="font-size:13px;color:#555;font-weight:500">. Minute</span>
+      <button class="torben-set-btn" onclick="doSetTorben()">✓ Setzen</button>
+      ${result?`<button class="torben-set-btn clear" onclick="doClearTorben()">✗ Löschen</button>`:''}
+    </div>
+    ${result?`<div style="font-size:12px;color:#7c3aed;margin-top:8px;font-weight:500">😭 Gesetzt: ${result.minute}. Minute</div>`:''}`;
+  return box;
+}
+
+window.doSetTorben=async()=>{
+  const min=parseInt(document.getElementById('torben-admin-min')?.value);
+  if(isNaN(min)||min<1||min>120)return;
+  torbenResult={minute:min};await fbSet('torbenResult',torbenResult);
+};
+window.doClearTorben=async()=>{torbenResult=null;await fbSet('torbenResult',null);};
+
+// ── TIPS VIEW ─────────────────────────────────────────────────────────────────
+function mkTips(){
+  const wrap=document.createElement('div');
+  const pi=PLAYERS.findIndex(p=>p.name===ME.name);const [bg,fg]=ACOLORS[pi]||ACOLORS[0];
+  const savedCount=(tips[ME.name]||[]).filter(t=>t!==null).length;
+  const openCount=GAMES.filter((_,gi)=>results[gi].status!=='final').length;
+
+  notice(wrap,'Ergebnis-Tipp: bis Abpfiff änderbar. Torschütze &amp; Karte: jederzeit änderbar — Punkte werden für jedes Ereignis mit dem dann aktuellen Tipp berechnet.');
+
+  const pc=document.createElement('div');
+  pc.style.cssText='display:flex;align-items:center;gap:12px;margin-bottom:16px;background:#fff;border:2px solid #D4A017;border-radius:12px;padding:12px 14px';
+  pc.innerHTML=`<div class="av" style="width:36px;height:36px;font-size:13px;background:${bg};color:${fg}">${ME.name.slice(0,2).toUpperCase()}</div>
+    <div><div style="font-size:15px;font-weight:600">${ME.name}<span class="gold-badge">Ich</span></div>
+    <div style="font-size:11px;color:#aaa;margin-top:2px">${savedCount} von 9 gespeichert · ${openCount} Spiele offen</div></div>`;
+  wrap.appendChild(pc);
+
+  wrap.appendChild(mkTorbenTipCard());
+  sectionTitle(wrap,'Ergebnis- & Bonus-Tipps');
+
+  GAMES.forEach((g,gi)=>{
+    const r=results[gi];const t=(tips[ME.name]||[])[gi];
+    const bt=(bonusTips[ME.name]||[])[gi]||{goalScorer:null,cardPlayer:null};
+    const bp=(bonusPoints[ME.name]||[])[gi]||{goals:0,cards:0};
+    const isFinal=r.status==='final';
+    const isCorrect=isFinal&&t&&t.h===r.h&&t.a===r.a;
+    const isWrong=isFinal&&t&&!isCorrect;
+
+    let headBg='#f9f9f9';if(isCorrect)headBg='#f0fdf4';if(isWrong)headBg='#fff5f5';
+    let badge='';
+    if(!isFinal&&!t)badge='<span class="badge b-info">Offen</span>';
+    else if(!isFinal)badge='<span class="badge b-info">Änderbar</span>';
+    else if(isCorrect)badge='<span class="badge b-ok">✓ Richtig</span>';
+    else if(isWrong)  badge='<span class="badge b-err">✗ Falsch</span>';
+    else              badge='<span class="badge b-muted">Gesperrt</span>';
+
+    const block=document.createElement('div');block.className='tip-block';
+    const head=document.createElement('div');head.className='tip-head';head.style.background=headBg;
+    head.innerHTML=`
+      <div style="text-align:right"><div class="tip-abbr">${g.ha}</div><div class="tip-full">${g.home}</div></div>
+      <div class="tip-center">${badge}
+        <div class="tip-inputs-row">
+          <input class="ti${isFinal?' locked':''}" type="number" min="0" max="20" placeholder="–" id="mti-${gi}-h" value="${t?t.h:''}" ${isFinal?'readonly':''}>
+          <span style="font-size:14px;color:#ccc">:</span>
+          <input class="ti${isFinal?' locked':''}" type="number" min="0" max="20" placeholder="–" id="mti-${gi}-a" value="${t?t.a:''}" ${isFinal?'readonly':''}>
+        </div>
+      </div>
+      <div><div class="tip-abbr">${g.aa}</div><div class="tip-full">${g.away}</div></div>`;
+
+    const bonusWrap=document.createElement('div');bonusWrap.className='bonus-grid';
+    bonusWrap.appendChild(mkBonusTipCell(gi,'goal',bt,bp));
+    bonusWrap.appendChild(mkBonusTipCell(gi,'card',bt,bp));
+    block.appendChild(head);block.appendChild(bonusWrap);wrap.appendChild(block);
+  });
+
+  const btn=document.createElement('button');btn.className='save-btn';btn.id='save-btn';
+  btn.disabled=openCount===0;
+  btn.textContent=openCount===0?'Alle Spiele abgepfiffen':'Alle Tipps speichern';
+  btn.onclick=doSaveTips;wrap.appendChild(btn);
+  const hintEl=document.createElement('div');hintEl.className='hint';hintEl.id='save-hint';wrap.appendChild(hintEl);
+  return wrap;
+}
+
+function mkTorbenTipCard(){
+  const myMin=torbenTips[ME.name];const locked=torbenResult!==null;
+  const isHit=locked&&myMin===torbenResult?.minute;const isMiss=locked&&myMin!==null&&!isHit;
+  let statusCls='ts-pending',statusTxt=myMin!==null?`Tipp: ${myMin}. Min`:'+5 möglich';
+  if(locked&&myMin===null){statusCls='ts-pending';statusTxt='Kein Tipp';}
+  if(isHit){statusCls='ts-hit';statusTxt='✓ +5 Punkte!';}
+  if(isMiss){statusCls='ts-miss';statusTxt='✗ Kein Punkt';}
+  const card=document.createElement('div');card.className='torben-card';card.style.marginBottom='16px';
+  card.innerHTML=`
+    <div class="torben-header">
+      <div><div class="torben-title">😭 Sonderfrage — Torben Lang</div><div class="torben-subtitle">+5 Bonuspunkte · Bei Gleichstand geteilt</div></div>
+      <span class="torben-status ${statusCls}" style="margin-left:auto">${statusTxt}</span>
+    </div>
+    <div class="torben-body">
+      <div class="torben-question">In welcher Minute heult Torben Lang über den VAR rum?</div>
+      <div class="torben-input-row">
+        <input class="torben-minute-input" type="number" min="1" max="120" placeholder="––" id="torben-tip-input" value="${myMin!==null?myMin:''}" ${locked?'disabled':''}>
+        <span style="font-size:13px;color:#555;font-weight:500">. Minute</span>
+      </div>
+      ${locked?`<div class="torben-result-banner ${isHit?'hit':isMiss?'miss':'hit'}" style="${!isHit&&!isMiss?'background:#ede9fe;border-color:#c4b5fd;color:#6d28d9':''}">
+        ${isHit?`🎉 Richtig! ${torbenResult.minute}. Minute — +5 Punkte!`:isMiss?`❌ Falsch — es war die ${torbenResult.minute}. Minute`:`Auflösung: ${torbenResult.minute}. Minute`}
+      </div>`:'<div style="font-size:11px;color:#aaa;margin-top:8px">Wird mit Tipps gespeichert.</div>'}
+    </div>`;
+  return card;
+}
+
+function mkBonusTipCell(gi,type,bt,bp){
+  const isGoal=type==='goal';const color=isGoal?'#1D9E75':'#D30000';
+  const picked=isGoal?bt.goalScorer:bt.cardPlayer;
+  const earnedPts=isGoal?(bp.goals||0):(bp.cards||0);
+  const evCount=(gameEvents[gi]||[]).filter(e=>isGoal?e.type==='goal':e.type==='card').length;
+  const id=`b${isGoal?'g':'c'}t-${gi}`;
+  const isFinal=results[gi].status==='final';
+
+  let sl=evCount>0?`+${earnedPts} Pkt (${evCount} Ereignis${evCount>1?'se':''})`:'+1 pro Tor',sc='bs-p';
+  if(earnedPts>0)sc='bs-ok';
+
+  const opts=isFinal
+    ?`<option value="${picked||''}">${picked?picked.split('|')[0]:'—'}</option>`
+    :squadOptsHtml(gi);
+
+  const d=document.createElement('div');d.className=`bonus-cell ${isGoal?'goal':'card'}`;
+  d.innerHTML=`
+    <div class="bml">
+      <span class="bml-title" style="color:${color}">${isGoal?'⚽ Torschütze':'🟨 Nächste Karte'}</span>
+      <span class="bstatus ${sc}">${sl}</span>
+    </div>
+    <select class="sel-tip" id="${id}" ${isFinal?'disabled':''}>${opts}</select>
+    ${earnedPts>0?`<div class="bonus-pts-tag">+${earnedPts} Punkt${earnedPts!==1?'e':''} bisher ✓</div>`:''}
+    ${!squads[gi]?.loaded&&!isFinal?`<div style="font-size:10px;color:#aaa;margin-top:4px">⏳ Aufstellung wird geladen…</div>`:''}`;
+  setTimeout(()=>{const s=document.getElementById(id);if(s&&picked)s.value=picked;},0);
+  return d;
+}
+
+window.doSaveTips=async()=>{
+  const now=Date.now();let anyMissing=false;
+  const nextTips=JSON.parse(JSON.stringify(tips));
+  const nextBonus=JSON.parse(JSON.stringify(bonusTips));
+  const nextTorben=JSON.parse(JSON.stringify(torbenTips));
+  if(!nextTips[ME.name])nextTips[ME.name]=GAMES.map(()=>null);
+  if(!nextBonus[ME.name])nextBonus[ME.name]=GAMES.map(()=>({goalScorer:null,cardPlayer:null}));
+
+  GAMES.forEach((_,gi)=>{
+    if(results[gi].status==='final')return;
+    const h=parseInt(document.getElementById(`mti-${gi}-h`)?.value);
+    const a=parseInt(document.getElementById(`mti-${gi}-a`)?.value);
+    if(isNaN(h)||isNaN(a)){anyMissing=true;return;}
+    nextTips[ME.name][gi]={h,a,ts:now};
+    const gs=document.getElementById(`bgt-${gi}`);
+    const cs=document.getElementById(`bct-${gi}`);
+    if(gs)nextBonus[ME.name][gi]={...nextBonus[ME.name][gi],goalScorer:gs.value||null};
+    if(cs)nextBonus[ME.name][gi]={...nextBonus[ME.name][gi],cardPlayer:cs.value||null};
+  });
+
+  if(!torbenResult){
+    const ti=document.getElementById('torben-tip-input');
+    const m=ti?parseInt(ti.value):NaN;
+    nextTorben[ME.name]=(!isNaN(m)&&m>=1&&m<=120)?m:null;
+  }
+
+  const hint=document.getElementById('save-hint');
+  if(anyMissing){if(hint)hint.textContent='⚠ Bitte alle Ergebnis-Felder ausfüllen.';return;}
+  const btn=document.getElementById('save-btn');
+  if(btn){btn.className='save-btn saving';btn.textContent='Speichern…';btn.disabled=true;}
+
+  tips=nextTips;bonusTips=nextBonus;torbenTips=nextTorben;
+  // Recalc bonus points with new tips
+  recalcAllBonusPoints();
+  await Promise.all([
+    fbSet('tips',tips),fbSet('bonusTips',bonusTips),
+    fbSet('torbenTips',torbenTips),fbSet('bonusPoints',bonusPoints)
+  ]);
+  if(btn){btn.className='save-btn saved';btn.textContent='✓ Gespeichert!';}
+  if(hint)hint.textContent='';
+};
+
+// ── RANK VIEW ─────────────────────────────────────────────────────────────────
+function mkRank(){
+  const wrap=document.createElement('div');
+    const finalPts=calcPts('final');const prevPts=calcPts('preview');
+  const pts=rankMode==='preview'?prevPts:finalPts;
+  const finished=results.filter(r=>r.status==='final').length;
+  const totalGoals=gameEvents.flat().filter(e=>e.type==='goal').length;
+  const totalCards=gameEvents.flat().filter(e=>e.type==='card').length;
+
+  const modeBar=document.createElement('div');modeBar.className='mode-btns';
+  ['final','preview'].forEach(m=>{
+    const b=document.createElement('button');
+    b.className='mode-btn'+(rankMode===m?(m==='final'?' mfinal':' mpreview'):'');
+    b.textContent=m==='final'?'🏆 Offizielle Wertung':'▶ Status quo';
+    b.onclick=()=>{rankMode=m;render();};modeBar.appendChild(b);
+  });
+  wrap.appendChild(modeBar);
+
+  if(rankMode==='preview'){
+    const pb=document.createElement('div');pb.className='preview-banner';
+    pb.textContent='Vorschau: aktueller Punktestand inkl. aller Bonus- und Torben-Punkte.';wrap.appendChild(pb);
+  } else {
+    notice(wrap,`${finished}/9 Spiele abgeschlossen · ⚽ ${totalGoals} Tore · 🟨 ${totalCards} Karten bisher`);
+  }
+
+  if(torbenResult){
+    const winners=PLAYERS.filter(p=>torbenTips[p.name]===torbenResult.minute);
+    const div=document.createElement('div');div.className='notice purple';
+    div.innerHTML=`😭 <strong>Torben: ${torbenResult.minute}. Minute</strong> · ${winners.length?`Gewinner: ${winners.map(p=>p.name).join(', ')} (je ${winners.length>1?(5/winners.length).toFixed(2):'5'} Pkt)`:'Niemand getippt'}`;
+    wrap.appendChild(div);
+  }
+
+  sectionTitle(wrap,rankMode==='preview'?'Vorschau-Rangliste':'Offizielle Rangliste');
+  const sorted=[...PLAYERS].sort((a,b)=>{const d=pts[b.name]-pts[a.name];return d!==0?d:a.pos-b.pos;});
+  const table=document.createElement('table');table.className='rank-table';
+  table.innerHTML=`<thead><tr><th>Pos</th><th>Spieler</th><th style="text-align:right">Punkte</th><th class="hide-mobile" style="text-align:right;font-size:9px">ERG&nbsp;⚽&nbsp;🟨&nbsp;😭</th></tr></thead>`;
+  const tbody=document.createElement('tbody');
+
+  sorted.forEach((p,i)=>{
+    const pPts=pts[p.name];
+    const medal=i===0&&pPts>0?'🥇':i===1&&pPts>0?'🥈':i===2&&pPts>0?'🥉':'';
+    const pi=PLAYERS.findIndex(x=>x.name===p.name);const [bg,fg]=ACOLORS[pi]||ACOLORS[0];
+    const isMe=p.name===ME.name;
+
+    // Count each type
+    let resultPts=0;
+    GAMES.forEach((_,gi)=>{
+      const r=results[gi];const t=(tips[p.name]||[])[gi];
+      const ok=rankMode==='preview'?(r.h!==null&&r.a!==null):r.status==='final';
+      if(ok&&t&&t.h===r.h&&t.a===r.a)resultPts+=1;
+    });
+    let goalPts=0,cardPts=0;
+    GAMES.forEach((_,gi)=>{const bp=(bonusPoints[p.name]||[])[gi]||{};goalPts+=(bp.goals||0);cardPts+=(bp.cards||0);});
+    const torbenPts=torbenResult&&torbenTips[p.name]===torbenResult.minute?5/Math.max(1,PLAYERS.filter(x=>torbenTips[x.name]===torbenResult.minute).length):0;
+
+    const tr=document.createElement('tr');if(isMe)tr.className='me-row';
+    tr.innerHTML=`
+      <td style="font-weight:600;color:#888;width:32px">${medal||(i+1)+'.'}</td>
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div class="av" style="width:28px;height:28px;font-size:10px;background:${bg};color:${fg}">${p.name.slice(0,2).toUpperCase()}</div>
+        <span style="font-size:13px;font-weight:${isMe?600:400}">${p.name}${isMe?`<span class="gold-badge">Ich</span>`:''}</span>
+      </div></td>
+      <td style="text-align:right"><span class="pts">${pPts%1===0?pPts:pPts.toFixed(2)}</span></td>
+      <td class="hide-mobile" style="text-align:right;font-size:11px;color:#aaa">
+        ${resultPts}&nbsp;&nbsp;${goalPts}&nbsp;&nbsp;${cardPts}&nbsp;&nbsp;${torbenPts>0?torbenPts.toFixed(torbenPts%1===0?0:2):'0'}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);wrap.appendChild(table);
+  const leg=document.createElement('div');leg.style.cssText='margin-top:10px;font-size:11px;color:#aaa';
+  leg.textContent='ERG = Ergebnis-Punkte · ⚽ = Tor-Bonuspunkte · 🟨 = Karten-Bonuspunkte · 😭 = Torben-Bonus';
+  wrap.appendChild(leg);
+
+  return wrap;
+}
+
+// ── INVITE ────────────────────────────────────────────────────────────────────
+function mkInvite(){
+  const wrap=document.createElement('div');
+  const ab=document.createElement('div');ab.className='notice gold';
+  ab.innerHTML='🔗 <strong>Personalisierte Links.</strong> Jeder Spieler sieht nur seine eigenen Tipps, die Live-Ergebnisse und die Rangliste.';
+  wrap.appendChild(ab);sectionTitle(wrap,'Links verschicken');
+  const grid=document.createElement('div');grid.className='invite-grid';
+  PLAYERS.forEach((p,i)=>{
+    const pi=PLAYERS.findIndex(x=>x.name===p.name);const [bg,fg]=ACOLORS[pi]||ACOLORS[0];
+    const isMe=p.name===ADMIN;
+    const link=`${window.location.origin}${window.location.pathname}?spieler=${encodeURIComponent(p.name)}&token=${playerToken(p.name)}`;
+    const card=document.createElement('div');card.className='inv-card'+(isMe?' me':'');
+    card.innerHTML=`<div style="display:flex;align-items:center;gap:10px">
+        <div class="av" style="width:34px;height:34px;font-size:13px;background:${bg};color:${fg}">${p.name.slice(0,2).toUpperCase()}</div>
+        <div><div style="font-size:13px;font-weight:600">${p.name}${isMe?`<span class="gold-badge">Admin</span>`:''}</div>
+        <div style="font-size:11px;color:#aaa">Rang ${p.pos}</div></div>
+      </div>
+      <div class="link-box"><span class="link-text">${link}</span>
+        <button class="copy-btn" id="cp-${i}" onclick="doCopy('${link.replace(/'/g,"\\'")}',${i})">Kopieren</button>
+      </div>`;
+    grid.appendChild(card);
+  });
+  wrap.appendChild(grid);return wrap;
+}
+
+window.doCopy=async(link,i)=>{
+  try{await navigator.clipboard.writeText(link);}
+  catch{const t=document.createElement('textarea');t.value=link;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);}
+  const btn=document.getElementById('cp-'+i);
+  if(btn){btn.className='copy-btn done';btn.textContent='✓ Kopiert!';setTimeout(()=>{btn.className='copy-btn';btn.textContent='Kopieren';},2000);}
+};
+
+function notice(parent,text){const d=document.createElement('div');d.className='notice';d.innerHTML=text;parent.appendChild(d);}
+function sectionTitle(parent,text){const d=document.createElement('div');d.className='section-title';d.textContent=text;parent.appendChild(d);}
+
+// ── BOOT ──────────────────────────────────────────────────────────────────────
+(async()=>{
+  try{await loadAll();}catch(e){console.warn('load',e);}
+  document.getElementById('loading').style.display='none';
+  document.getElementById('main').style.display='block';
+  render();startListener();
+  // Initial live fetch
+  await fetchAllLineups();
+  await fetchLiveData();
+  // Poll live data every 60s
+  setInterval(fetchLiveData, 60000);
+  // Refresh lineups every 5min
+  setInterval(()=>fetchAllLineups().then(()=>render()), 5*60*1000);
+})();
+</script>
+</body>
+</html>
